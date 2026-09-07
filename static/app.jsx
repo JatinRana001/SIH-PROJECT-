@@ -7,6 +7,8 @@ const VOICE_PACKS = {
   hi: {
     id: 'hi',
     code: 'hi-IN',
+    localeAliases: ['hi'],
+    guidanceAvailable: true,
     name: 'Hindi',
     nativeName: 'हिंदी',
     flag: '🇮🇳',
@@ -16,6 +18,8 @@ const VOICE_PACKS = {
   en: {
     id: 'en',
     code: 'en-IN',
+    localeAliases: ['en-GB', 'en-US', 'en'],
+    guidanceAvailable: true,
     name: 'English',
     nativeName: 'English',
     flag: '🇬🇧',
@@ -25,6 +29,8 @@ const VOICE_PACKS = {
   pa: {
     id: 'pa',
     code: 'pa-IN',
+    localeAliases: ['pa-Guru-IN', 'pa-PK', 'pa'],
+    guidanceAvailable: false,
     name: 'Punjabi',
     nativeName: 'ਪੰਜਾਬੀ',
     flag: '🇮🇳',
@@ -34,6 +40,8 @@ const VOICE_PACKS = {
   bn: {
     id: 'bn',
     code: 'bn-IN',
+    localeAliases: ['bn-BD', 'bn'],
+    guidanceAvailable: false,
     name: 'Bengali',
     nativeName: 'বাংলা',
     flag: '🇮🇳',
@@ -43,6 +51,8 @@ const VOICE_PACKS = {
   ta: {
     id: 'ta',
     code: 'ta-IN',
+    localeAliases: ['ta-LK', 'ta'],
+    guidanceAvailable: false,
     name: 'Tamil',
     nativeName: 'தமிழ்',
     flag: '🇮🇳',
@@ -52,6 +62,8 @@ const VOICE_PACKS = {
   te: {
     id: 'te',
     code: 'te-IN',
+    localeAliases: ['te'],
+    guidanceAvailable: false,
     name: 'Telugu',
     nativeName: 'తెలుగు',
     flag: '🇮🇳',
@@ -61,6 +73,8 @@ const VOICE_PACKS = {
   mr: {
     id: 'mr',
     code: 'mr-IN',
+    localeAliases: ['mr'],
+    guidanceAvailable: false,
     name: 'Marathi',
     nativeName: 'मराठी',
     flag: '🇮🇳',
@@ -70,6 +84,8 @@ const VOICE_PACKS = {
   gu: {
     id: 'gu',
     code: 'gu-IN',
+    localeAliases: ['gu'],
+    guidanceAvailable: false,
     name: 'Gujarati',
     nativeName: 'ગુજરાતી',
     flag: '🇮🇳',
@@ -79,6 +95,8 @@ const VOICE_PACKS = {
   kn: {
     id: 'kn',
     code: 'kn-IN',
+    localeAliases: ['kn'],
+    guidanceAvailable: false,
     name: 'Kannada',
     nativeName: 'ಕನ್ನಡ',
     flag: '🇮🇳',
@@ -88,6 +106,8 @@ const VOICE_PACKS = {
   ml: {
     id: 'ml',
     code: 'ml-IN',
+    localeAliases: ['ml'],
+    guidanceAvailable: false,
     name: 'Malayalam',
     nativeName: 'മലയാളം',
     flag: '🇮🇳',
@@ -242,6 +262,39 @@ const LOCALIZATION = {
 // ==========================================
 // CENTRALIZED VOICE SERVICE (Web Speech API)
 // ==========================================
+function answersMatch(selectedAnswer, correctAnswer) {
+  if (Array.isArray(selectedAnswer) || Array.isArray(correctAnswer)) {
+    return Array.isArray(selectedAnswer)
+      && Array.isArray(correctAnswer)
+      && selectedAnswer.length === correctAnswer.length
+      && selectedAnswer.every((value, index) => answersMatch(value, correctAnswer[index]));
+  }
+
+  const selectedHasId = selectedAnswer && typeof selectedAnswer === 'object' && 'id' in selectedAnswer;
+  const correctHasId = correctAnswer && typeof correctAnswer === 'object' && 'id' in correctAnswer;
+  if (selectedHasId || correctHasId) {
+    return String(selectedHasId ? selectedAnswer.id : selectedAnswer) === String(correctHasId ? correctAnswer.id : correctAnswer);
+  }
+
+  if (selectedAnswer && correctAnswer && typeof selectedAnswer === 'object' && typeof correctAnswer === 'object') {
+    return JSON.stringify(selectedAnswer) === JSON.stringify(correctAnswer);
+  }
+
+  return typeof selectedAnswer === 'number' && typeof correctAnswer === 'number'
+    ? selectedAnswer === correctAnswer
+    : String(selectedAnswer) === String(correctAnswer);
+}
+
+function getCorrectAnswer(question) {
+  if (Array.isArray(question.correct_sequence)) return question.correct_sequence;
+  if (Object.prototype.hasOwnProperty.call(question, 'correct_answer')) return question.correct_answer;
+  if (Object.prototype.hasOwnProperty.call(question, 'correct_answer_id')) return question.correct_answer_id;
+  if (Number.isInteger(question.correct_answer_index) && Array.isArray(question.options)) {
+    return question.options[question.correct_answer_index];
+  }
+  return undefined;
+}
+
 class VoiceService {
   constructor() {
     this.synth = typeof window !== 'undefined' ? window.speechSynthesis : null;
@@ -249,6 +302,7 @@ class VoiceService {
     this.isSpeaking = false;
     this.isPaused = false;
     this.listeners = new Set();
+    this.voiceAvailabilityListeners = new Set();
     this.enabled = true;
     this.initVoices();
   }
@@ -257,6 +311,7 @@ class VoiceService {
     if (!this.synth) return;
     const loadVoices = () => {
       this.voices = this.synth.getVoices();
+      this.notifyVoiceAvailability();
     };
     loadVoices();
     if (this.synth.onvoiceschanged !== undefined) {
@@ -273,25 +328,26 @@ class VoiceService {
 
   getBestVoiceForLang(langId) {
     const all = this.getAvailableVoices();
-    const pack = VOICE_PACKS[langId] || VOICE_PACKS['hi'];
-    const targetCode = pack.code.toLowerCase().replace('_', '-');
-    const baseCode = targetCode.split('-')[0];
+    const pack = VOICE_PACKS[langId];
+    if (!pack) return null;
+    const normalizeLocale = (locale) => locale.toLowerCase().replace(/_/g, '-');
+    const supportedLocales = [pack.code, ...(pack.localeAliases || [])].map(normalizeLocale);
+    const baseCodes = new Set(supportedLocales.map(locale => locale.split('-')[0]));
 
-    // 1. Exact match e.g. hi-IN
-    let match = all.find(v => v.lang.toLowerCase().replace('_', '-') === targetCode);
+    // 1. Exact locale or a documented locale alias for the selected pack.
+    let match = all.find(v => supportedLocales.includes(normalizeLocale(v.lang)));
     if (match) return match;
 
-    // 2. Starts with base language code e.g. hi
-    match = all.find(v => v.lang.toLowerCase().startsWith(baseCode));
+    // 2. Same base language, regardless of country/script variant.
+    match = all.find(v => baseCodes.has(normalizeLocale(v.lang).split('-')[0]));
     if (match) return match;
 
     // 3. Match voice name containing language (e.g. "Hindi", "Kalpana", "Hemant")
     match = all.find(v => v.name.toLowerCase().includes(pack.name.toLowerCase()));
     if (match) return match;
 
-    // 4. Fallback to default or first available voice
-    match = all.find(v => v.default) || all[0] || null;
-    return match;
+    // Never substitute a different language's default voice.
+    return null;
   }
 
   speak(text, langId = 'hi', speed = 'normal', onStart = null, onEnd = null) {
@@ -301,6 +357,15 @@ class VoiceService {
       return;
     }
     if (!this.synth) {
+      if (onEnd) onEnd();
+      return;
+    }
+
+    if (!this.isVoiceAvailable(langId)) {
+      const pack = VOICE_PACKS[langId];
+      console.warn(pack
+        ? `Spoken guidance is unavailable for ${pack.name}.`
+        : `Unknown voice pack: ${langId}`);
       if (onEnd) onEnd();
       return;
     }
@@ -322,9 +387,22 @@ class VoiceService {
       return;
     }
 
-    const utter = new SpeechSynthesisUtterance(cleanText);
+    const pack = VOICE_PACKS[langId];
+    if (!pack) {
+      console.warn(`Unknown voice pack: ${langId}`);
+      if (onEnd) onEnd();
+      return;
+    }
     const voice = this.getBestVoiceForLang(langId);
-    if (voice) utter.voice = voice;
+    if (!voice) {
+      console.warn(`No installed voice is available for ${pack.name} (${pack.code}).`);
+      if (onEnd) onEnd();
+      return;
+    }
+
+    const utter = new SpeechSynthesisUtterance(cleanText);
+    utter.lang = pack.code;
+    utter.voice = voice;
 
     // Rate calculation based on user preference
     let rate = 0.9;
@@ -401,12 +479,21 @@ class VoiceService {
   }
 
   isVoiceAvailable(langId) {
-    const voice = this.getBestVoiceForLang(langId);
-    return !!voice;
+    const pack = VOICE_PACKS[langId];
+    return Boolean(pack?.guidanceAvailable && this.getBestVoiceForLang(langId));
+  }
+
+  getVoiceAvailability() {
+    return Object.fromEntries(Object.keys(VOICE_PACKS).map(id => [id, this.isVoiceAvailable(id)]));
   }
 
   previewVoice(langId, speed = 'normal', onStart = null, onEnd = null) {
-    const pack = VOICE_PACKS[langId] || VOICE_PACKS['hi'];
+    const pack = VOICE_PACKS[langId];
+    if (!pack) {
+      console.warn(`Unknown voice pack: ${langId}`);
+      if (onEnd) onEnd();
+      return;
+    }
     const sample = pack.previewPhrase || "आइए आज की गतिविधि शुरू करते हैं।";
     this.speak(sample, langId, speed, onStart, onEnd);
   }
@@ -417,6 +504,16 @@ class VoiceService {
 
   removeListener(fn) {
     this.listeners.delete(fn);
+  }
+
+  addVoiceAvailabilityListener(fn) {
+    this.voiceAvailabilityListeners.add(fn);
+    return () => this.voiceAvailabilityListeners.delete(fn);
+  }
+
+  notifyVoiceAvailability() {
+    const availability = this.getVoiceAvailability();
+    this.voiceAvailabilityListeners.forEach(fn => fn(availability));
   }
 
   notifyState() {
@@ -680,8 +777,12 @@ function SpeakerButton({ text, lang = 'hi', speed = 'normal', size = 'md', autoP
 // VOICE PACK SELECTION MODAL
 // ==========================================
 function VoicePackModal({ isOpen, onClose, currentVoice, onSelectVoice, speed, onSelectSpeed, soundEffects }) {
-  if (!isOpen) return null;
   const [previewingLang, setPreviewingLang] = useState(null);
+  const [voiceAvailability, setVoiceAvailability] = useState(() => voiceService.getVoiceAvailability());
+
+  useEffect(() => voiceService.addVoiceAvailabilityListener(setVoiceAvailability), []);
+
+  if (!isOpen) return null;
 
   const handlePreview = (langId, e) => {
     e.stopPropagation();
@@ -717,14 +818,17 @@ function VoicePackModal({ isOpen, onClose, currentVoice, onSelectVoice, speed, o
           {Object.values(VOICE_PACKS).map((pack) => {
             const isSelected = currentVoice === pack.id;
             const isPreviewing = previewingLang === pack.id;
+            const isAvailable = voiceAvailability[pack.id];
             return (
               <div
                 key={pack.id}
                 onClick={() => {
+                  if (!isAvailable) return;
                   if (soundEffects) sounds.playChime('tap');
                   onSelectVoice(pack.id);
                 }}
-                className={`p-5 rounded-2xl border-2 transition-all cursor-pointer flex flex-col justify-between ${isSelected ? 'bg-peach-50/80 border-peach-500 shadow-sm ring-2 ring-peach-200' : 'bg-white border-cream-200 hover:border-peach-200 hover:bg-cream-50'}`}
+                aria-disabled={!isAvailable}
+                className={`p-5 rounded-2xl border-2 transition-all flex flex-col justify-between ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'} ${isSelected ? 'bg-peach-50/80 border-peach-500 shadow-sm ring-2 ring-peach-200' : 'bg-white border-cream-200'} ${isAvailable && !isSelected ? 'hover:border-peach-200 hover:bg-cream-50' : ''}`}
               >
                 <div>
                   <div className="flex items-center justify-between mb-2">
@@ -735,7 +839,7 @@ function VoicePackModal({ isOpen, onClose, currentVoice, onSelectVoice, speed, o
                         <span>Selected</span>
                       </span>
                     ) : (
-                      <span className="text-xs text-stone-400 font-medium">Voice Pack</span>
+                      <span className="text-xs text-stone-400 font-medium">{isAvailable ? 'Voice Pack' : 'Spoken guidance unavailable'}</span>
                     )}
                   </div>
 
@@ -748,6 +852,7 @@ function VoicePackModal({ isOpen, onClose, currentVoice, onSelectVoice, speed, o
                   <button
                     type="button"
                     onClick={(e) => handlePreview(pack.id, e)}
+                    disabled={!isAvailable}
                     className={`px-3 py-1.5 rounded-xl text-xs font-bold flex items-center gap-1.5 border transition ${isPreviewing ? 'bg-peach-500 text-white border-peach-500 animate-pulse' : 'bg-cream-100 text-stone-700 hover:bg-cream-200 border-cream-200'}`}
                   >
                     <span>{isPreviewing ? '⏹' : '▶'}</span>
@@ -960,8 +1065,7 @@ function CogniCareApp() {
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-heading font-bold text-xl text-stone-800 tracking-tight">CogniCare</span>
-                <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-peach-100 text-peach-600 border border-peach-200">Companion</span>
+                <span className="font-heading font-bold text-xl text-stone-800 tracking-tight">SmritiSaathi</span>
               </div>
               <p className="text-xs text-stone-500 hidden sm:block">Personalized Cognitive Wellness & Routine</p>
             </div>
@@ -1128,7 +1232,7 @@ function CogniCareApp() {
       {/* Footer */}
       <footer className="bg-white border-t border-cream-200 py-6 px-4 text-center text-xs text-stone-500">
         <p className="max-w-2xl mx-auto leading-relaxed">
-          CogniCare Companion is a gentle personalized cognitive wellness and routine-support platform with Multilingual Voice Packs.
+          SmritiSaathi is a gentle personalized cognitive wellness and routine-support platform with Multilingual Voice Packs.
           <span className="block mt-1 text-stone-400">Not intended for clinical medical examination or diagnostic claims. Dedicated to comfort, familiarity, and joyful connection. ❤️</span>
         </p>
       </footer>
@@ -1812,7 +1916,7 @@ function TodaySessionFlow({
 
     setSelectedOption(option);
     const latency = Date.now() - startTime;
-    const correct = option === currentQuestion.correct_answer;
+    const correct = answersMatch(option, getCorrectAnswer(currentQuestion));
     
     setIsAnswerSubmitted(true);
     setIsCorrect(correct);
@@ -2138,12 +2242,7 @@ function TodaySessionFlow({
             <button
               onClick={() => {
                 const seq = routineOrderedSteps.map(s => s.step_id);
-                const isMatch = JSON.stringify(seq) === JSON.stringify(currentQuestion.correct_sequence);
-                if (isMatch) {
-                  handleSelectOption("order_correct");
-                } else {
-                  handleSelectOption("order_incorrect");
-                }
+                handleSelectOption(seq);
               }}
               className="w-full mt-4 py-3 rounded-xl bg-peach-500 text-white font-semibold shadow-xs hover:bg-peach-600 transition"
             >
@@ -2172,7 +2271,7 @@ function TodaySessionFlow({
               let btnStyle = "bg-white hover:bg-cream-50 border-cream-200 text-stone-800";
               
               if (isAnswerSubmitted) {
-                if (opt === currentQuestion.correct_answer) {
+                if (answersMatch(opt, getCorrectAnswer(currentQuestion))) {
                   btnStyle = "bg-sage-100 border-sage-500 text-sage-900 font-bold shadow-sm";
                 } else if (isChosen) {
                   btnStyle = "bg-amber-50 border-amber-300 text-amber-900";
@@ -2187,7 +2286,7 @@ function TodaySessionFlow({
                   className={`p-5 rounded-2xl border-2 text-left font-semibold text-lg transition-all transform active:scale-98 shadow-xs flex items-center justify-between gap-3 ${btnStyle}`}
                 >
                   <span>{opt}</span>
-                  {isAnswerSubmitted && opt === currentQuestion.correct_answer && (
+                  {isAnswerSubmitted && answersMatch(opt, getCorrectAnswer(currentQuestion)) && (
                     <span className="w-7 h-7 rounded-full bg-sage-500 text-white flex items-center justify-center text-sm font-bold">
                       ✓
                     </span>
@@ -3044,10 +3143,13 @@ function PatientOnboardingModal({ patient, onComplete, voiceLanguage, setVoiceLa
   const [step, setStep] = useState(1);
   const [name, setName] = useState(patient.preferred_name || "");
   const [selectedVoice, setSelectedVoice] = useState(voiceLanguage || "hi");
+  const [voiceAvailability, setVoiceAvailability] = useState(() => voiceService.getVoiceAvailability());
   const [selectedLang, setSelectedLang] = useState("en");
   const [region, setRegion] = useState(patient.region || "Delhi / NCR");
   const [famName, setFamName] = useState("");
   const [famRelation, setFamRelation] = useState("Grandson");
+
+  useEffect(() => voiceService.addVoiceAvailabilityListener(setVoiceAvailability), []);
   const [famNotes, setFamNotes] = useState("");
 
   const handleFinish = async () => {
@@ -3081,7 +3183,7 @@ function PatientOnboardingModal({ patient, onComplete, voiceLanguage, setVoiceLa
       <div className="bg-white rounded-3xl max-w-lg w-full p-8 border border-cream-200 gentle-shadow space-y-6">
         <div className="text-center space-y-1">
           <span className="text-xs font-semibold px-3 py-1 rounded-full bg-peach-100 text-peach-700">
-            Welcome to CogniCare • Step {step} of 4
+            Welcome to SmritiSaathi • Step {step} of 4
           </span>
           <h2 className="font-heading font-bold text-2xl text-stone-800">
             {step === 1 ? "Let's Get Acquainted" : step === 2 ? "How would you like to hear your activities?" : step === 3 ? "Your Roots & Region" : "A Beloved Family Member"}
@@ -3113,14 +3215,17 @@ function PatientOnboardingModal({ patient, onComplete, voiceLanguage, setVoiceLa
               {['hi', 'en', 'pa', 'bn'].map((vId) => {
                 const p = VOICE_PACKS[vId];
                 const isSel = selectedVoice === vId;
+                const isAvailable = voiceAvailability[vId];
                 return (
                   <div
                     key={vId}
                     onClick={() => {
+                      if (!isAvailable) return;
                       setSelectedVoice(vId);
                       if (soundEffects) sounds.playChime('tap');
                     }}
-                    className={`p-4 rounded-2xl border-2 transition cursor-pointer flex flex-col justify-between ${isSel ? 'bg-peach-50 border-peach-500 ring-2 ring-peach-200' : 'bg-white border-cream-200 hover:border-peach-200'}`}
+                    aria-disabled={!isAvailable}
+                    className={`p-4 rounded-2xl border-2 transition flex flex-col justify-between ${isAvailable ? 'cursor-pointer' : 'cursor-not-allowed opacity-60'} ${isSel ? 'bg-peach-50 border-peach-500 ring-2 ring-peach-200' : 'bg-white border-cream-200'} ${isAvailable && !isSel ? 'hover:border-peach-200' : ''}`}
                   >
                     <div>
                       <div className="flex items-center justify-between mb-1">
@@ -3128,7 +3233,7 @@ function PatientOnboardingModal({ patient, onComplete, voiceLanguage, setVoiceLa
                         {isSel && <span className="text-xs font-bold text-peach-600">✓ Selected</span>}
                       </div>
                       <h4 className="font-bold text-stone-800 text-base">{p.nativeName}</h4>
-                      <p className="text-xs text-stone-500">{p.name} Voice</p>
+                      <p className="text-xs text-stone-500">{isAvailable ? `${p.name} Voice` : 'Spoken guidance unavailable'}</p>
                     </div>
 
                     <button
@@ -3137,6 +3242,7 @@ function PatientOnboardingModal({ patient, onComplete, voiceLanguage, setVoiceLa
                         e.stopPropagation();
                         voiceService.previewVoice(vId, speechSpeed);
                       }}
+                      disabled={!isAvailable}
                       className="mt-3 py-1.5 px-2.5 rounded-lg bg-cream-100 hover:bg-cream-200 text-stone-700 text-xs font-bold border border-cream-200 flex items-center justify-center gap-1"
                     >
                       <span>▶</span>
@@ -3157,6 +3263,7 @@ function PatientOnboardingModal({ patient, onComplete, voiceLanguage, setVoiceLa
                 <button
                   type="button"
                   onClick={() => voiceService.previewVoice(selectedVoice, speechSpeed)}
+                  disabled={!voiceAvailability[selectedVoice]}
                   className="px-4 py-2 rounded-xl bg-peach-500 hover:bg-peach-600 text-white font-bold text-xs shadow-xs transition inline-flex items-center gap-1.5"
                 >
                   <span>▶</span>
@@ -3183,8 +3290,11 @@ function PatientOnboardingModal({ patient, onComplete, voiceLanguage, setVoiceLa
                 <button
                   type="button"
                   onClick={() => {
-                    setSelectedVoice(selectedVoice === 'hi' ? 'en' : 'hi');
+                    const availablePacks = Object.keys(VOICE_PACKS).filter(id => voiceAvailability[id]);
+                    const nextIndex = availablePacks.indexOf(selectedVoice) + 1;
+                    if (availablePacks.length) setSelectedVoice(availablePacks[nextIndex % availablePacks.length]);
                   }}
+                  disabled={!Object.values(voiceAvailability).some(Boolean)}
                   className="px-3 py-1.5 rounded-lg bg-white border border-stone-300 text-stone-700 text-xs font-medium hover:bg-stone-50 transition"
                 >
                   Choose another voice

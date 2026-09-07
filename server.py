@@ -137,7 +137,7 @@ DEFAULT_DATA = {
                 {"id": "a1", "title": "Light nutritious lunch & fresh curd", "time": "1:00 PM", "icon": "Utensils", "completed": False},
                 {"id": "a2", "title": "Take afternoon multivitamin", "time": "1:45 PM", "icon": "Pill", "completed": False},
                 {"id": "a3", "title": "Relaxing afternoon rest / Ghazal music", "time": "2:00 PM", "icon": "Music", "completed": False},
-                {"id": "a4", "title": "CogniCare wellness session", "time": "3:30 PM", "icon": "Brain", "completed": False}
+                {"id": "a4", "title": "SmritiSaathi wellness session", "time": "3:30 PM", "icon": "Brain", "completed": False}
             ]
         },
         {
@@ -543,6 +543,7 @@ def generate_questions_for_game(game_id, data, current_level=2):
                     {"id": "c6", "val": "🔵", "is_target": True}
                 ],
                 "target_count": 3,
+                "correct_answer": "completed",
                 "hints": [
                     "💡 Look for the deep sky blue circular color 🔵.",
                     "💡 Count 1, 2, and 3 blue circles.",
@@ -727,7 +728,7 @@ def generate_questions_for_game(game_id, data, current_level=2):
 
 @app.route('/api/health', methods=['GET'])
 def health():
-    return jsonify({"status": "healthy", "service": "CogniCare Companion Platform API", "time": datetime.now().isoformat()})
+    return jsonify({"status": "healthy", "service": "SmritiSaathi Platform API", "time": datetime.now().isoformat()})
 
 @app.route('/api/patient', methods=['GET'])
 def get_patient():
@@ -1221,5 +1222,5 @@ def index():
 if __name__ == '__main__':
     os.makedirs(os.path.join(os.path.dirname(__file__), 'static'), exist_ok=True)
     load_data()
-    print("CogniCare Companion Server starting on http://localhost:5000")
+    print("SmritiSaathi Server starting on http://localhost:5000")
     app.run(host='0.0.0.0', port=5000, debug=False)

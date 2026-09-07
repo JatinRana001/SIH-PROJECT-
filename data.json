@@ -9,7 +9,7 @@
     "language": "Hindi & English",
     "bio": "Retired railway engineer who loves morning tea on the balcony, Ghazals, and playing with his grandson.",
     "streak_days": 8,
-    "total_sessions_completed": 19,
+    "total_sessions_completed": 22,
     "current_session_done_today": true,
     "last_session_date": "2026-09-07",
     "onboarding_completed": true,
@@ -17,7 +17,7 @@
       "font_size": "large",
       "voice_guidance": true,
       "interface_language": "en",
-      "voice_language": "hi",
+      "voice_language": "en",
       "voice_enabled": true,
       "auto_read_aloud": true,
       "speech_speed": "normal",
@@ -36,18 +36,6 @@
     "role": "Primary Caregiver & Neurologist"
   },
   "family_members": [
-    {
-      "id": "fam_1",
-      "name": "Rohan",
-      "full_name": "Rohan Sharma",
-      "relationship": "Grandson",
-      "nickname": "Chintu",
-      "photo": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=400&fit=crop&crop=faces",
-      "familiarity_notes": "Studies computer science in Delhi. Visits every Sunday evening.",
-      "favorite_activity": "Playing chess and talking about trains",
-      "times_recognized": 24,
-      "last_recognized": "Yesterday"
-    },
     {
       "id": "fam_2",
       "name": "Priya",
@@ -154,7 +142,7 @@
           "title": "Light nutritious lunch & fresh curd",
           "time": "1:00 PM",
           "icon": "Utensils",
-          "completed": false
+          "completed": true
         },
         {
           "id": "a2",
@@ -172,7 +160,7 @@
         },
         {
           "id": "a4",
-          "title": "CogniCare wellness session",
+          "title": "SmritiSaathi wellness session",
           "time": "3:30 PM",
           "icon": "Brain",
           "completed": false
@@ -322,9 +310,9 @@
     "memory": {
       "name": "Remember & Recall",
       "level": 2,
-      "accuracy_pct": 68,
+      "accuracy_pct": 77,
       "trend": "stable",
-      "hints_avg": 1.4,
+      "hints_avg": 0.9,
       "description": "Benefits from visual association and gentle hints when recalling 4+ objects."
     },
     "attention": {
@@ -337,10 +325,10 @@
     },
     "sequencing": {
       "name": "Daily Routine & Order",
-      "level": 3,
-      "accuracy_pct": 88,
+      "level": 4,
+      "accuracy_pct": 91,
       "trend": "up",
-      "hints_avg": 0.6,
+      "hints_avg": 0.5,
       "description": "Consistent ordering of daily morning steps, brushing, bathing, and meals."
     },
     "semantic": {
@@ -362,7 +350,7 @@
     "culture": {
       "name": "Culture & Familiarity",
       "level": 4,
-      "accuracy_pct": 95,
+      "accuracy_pct": 97,
       "trend": "up",
       "hints_avg": 0.2,
       "description": "Deep autobiographical warmth with festive traditions, regional food, and melodies."
@@ -370,13 +358,37 @@
     "reasoning": {
       "name": "Sequence & Reasoning",
       "level": 2,
-      "accuracy_pct": 71,
+      "accuracy_pct": 79,
       "trend": "stable",
-      "hints_avg": 1.2,
+      "hints_avg": 0.8,
       "description": "Comfortable with step patterns (2, 4, 6) and daily logic with supportive reassurance."
     }
   },
   "alerts": [
+    {
+      "id": "alt_1788785635",
+      "severity": "success",
+      "title": "Daily Wellness Session Completed 🎉",
+      "message": "Devendra completed 4 activities in 8 minutes with great cheerfulness.",
+      "timestamp": "Just now",
+      "action_taken": "Session recorded; next recommended activities scheduled for tomorrow."
+    },
+    {
+      "id": "alt_1788785477",
+      "severity": "success",
+      "title": "Daily Wellness Session Completed 🎉",
+      "message": "Devendra completed 4 activities in 8 minutes with great cheerfulness.",
+      "timestamp": "Just now",
+      "action_taken": "Session recorded; next recommended activities scheduled for tomorrow."
+    },
+    {
+      "id": "alt_1788785396",
+      "severity": "success",
+      "title": "Daily Wellness Session Completed 🎉",
+      "message": "Devendra completed 4 activities in 8 minutes with great cheerfulness.",
+      "timestamp": "Just now",
+      "action_taken": "Session recorded; next recommended activities scheduled for tomorrow."
+    },
     {
       "id": "alt_1788774179",
       "severity": "success",
@@ -411,6 +423,51 @@
     }
   ],
   "history_sessions": [
+    {
+      "session_id": "ses_1788785635",
+      "date": "2026-09-07",
+      "completed_activities": 4,
+      "duration_minutes": 8,
+      "encouragement": "Wonderful focus and warmth today! You completed all activities with a smile.",
+      "stars": 5,
+      "skills_practiced": [
+        "Recognition",
+        "Routine",
+        "Memory",
+        "Culture"
+      ],
+      "accuracy": 90
+    },
+    {
+      "session_id": "ses_1788785477",
+      "date": "2026-09-07",
+      "completed_activities": 4,
+      "duration_minutes": 8,
+      "encouragement": "Wonderful focus and warmth today! You completed all activities with a smile.",
+      "stars": 5,
+      "skills_practiced": [
+        "Recognition",
+        "Routine",
+        "Memory",
+        "Culture"
+      ],
+      "accuracy": 90
+    },
+    {
+      "session_id": "ses_1788785396",
+      "date": "2026-09-07",
+      "completed_activities": 4,
+      "duration_minutes": 8,
+      "encouragement": "Wonderful focus and warmth today! You completed all activities with a smile.",
+      "stars": 5,
+      "skills_practiced": [
+        "Recognition",
+        "Routine",
+        "Memory",
+        "Culture"
+      ],
+      "accuracy": 90
+    },
     {
       "session_id": "ses_1788774179",
       "date": "2026-09-07",
@@ -607,6 +664,190 @@
       "hints_used": 0,
       "response_time_ms": 994,
       "timestamp": "2026-09-07T17:10:01.070802"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 6027,
+      "timestamp": "2026-09-07T18:02:18.469349"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1052,
+      "timestamp": "2026-09-07T18:02:21.591269"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1701,
+      "timestamp": "2026-09-07T18:04:04.283799"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 679,
+      "timestamp": "2026-09-07T18:04:06.244927"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1225,
+      "timestamp": "2026-09-07T18:18:32.995076"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1076,
+      "timestamp": "2026-09-07T18:18:36.019101"
+    },
+    {
+      "question_id": "grp_q1",
+      "game_type": "sequencing",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 7338,
+      "timestamp": "2026-09-07T18:18:44.433490"
+    },
+    {
+      "question_id": "gr_q1",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 26552,
+      "timestamp": "2026-09-07T18:19:13.592179"
+    },
+    {
+      "question_id": "gr_q2",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 17586,
+      "timestamp": "2026-09-07T18:19:32.685360"
+    },
+    {
+      "question_id": "gc_q1",
+      "game_type": "culture",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 6162,
+      "timestamp": "2026-09-07T18:19:40.286849"
+    },
+    {
+      "question_id": "gc_q2",
+      "game_type": "culture",
+      "is_correct": true,
+      "hints_used": 1,
+      "response_time_ms": 12974,
+      "timestamp": "2026-09-07T18:19:54.914542"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 2927,
+      "timestamp": "2026-09-07T18:20:55.811441"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1027,
+      "timestamp": "2026-09-07T18:20:57.942674"
+    },
+    {
+      "question_id": "grp_q1",
+      "game_type": "sequencing",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 4828,
+      "timestamp": "2026-09-07T18:21:03.529618"
+    },
+    {
+      "question_id": "grs_q1",
+      "game_type": "reasoning",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 5766,
+      "timestamp": "2026-09-07T18:21:10.944358"
+    },
+    {
+      "question_id": "gc_q1",
+      "game_type": "culture",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1705,
+      "timestamp": "2026-09-07T18:21:13.647614"
+    },
+    {
+      "question_id": "gc_q2",
+      "game_type": "culture",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1275,
+      "timestamp": "2026-09-07T18:21:16.587916"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1966,
+      "timestamp": "2026-09-07T18:23:05.879984"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 6211,
+      "timestamp": "2026-09-07T18:23:14.298348"
+    },
+    {
+      "question_id": "grp_q1",
+      "game_type": "sequencing",
+      "is_correct": true,
+      "hints_used": 1,
+      "response_time_ms": 10903,
+      "timestamp": "2026-09-07T18:23:44.357010"
+    },
+    {
+      "question_id": "grs_q1",
+      "game_type": "reasoning",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 2076,
+      "timestamp": "2026-09-07T18:23:48.393373"
+    },
+    {
+      "question_id": "gc_q1",
+      "game_type": "culture",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1686,
+      "timestamp": "2026-09-07T18:23:50.984790"
+    },
+    {
+      "question_id": "gc_q2",
+      "game_type": "culture",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1161,
+      "timestamp": "2026-09-07T18:23:54.003878"
     }
   ]
 }
