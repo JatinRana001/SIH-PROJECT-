@@ -912,7 +912,10 @@ function VoicePackModal({ isOpen, onClose, currentVoice, onSelectVoice, speed, o
 // ==========================================
 function CogniCareApp() {
   const [role, setRole] = useState('patient'); // 'patient' | 'caregiver'
-  const [view, setView] = useState('dashboard');
+  const [view, setView] = useState(() => {
+    const match = window.location.hash.match(/^#game\/(game_[a-z]+)$/);
+    return match ? `game:${match[1]}` : 'dashboard';
+  });
   
   // Data States
   const [patient, setPatient] = useState(null);
@@ -942,6 +945,25 @@ function CogniCareApp() {
   useEffect(() => {
     voiceService.setEnabled(voiceGuidance);
   }, [voiceGuidance]);
+
+  // Hash URLs make each standalone game directly addressable without coupling it to a daily session.
+  useEffect(() => {
+    const onHashChange = () => {
+      const match = window.location.hash.match(/^#game\/(game_[a-z]+)$/);
+      if (match) setView(`game:${match[1]}`);
+    };
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  useEffect(() => {
+    if (view.startsWith('game:')) {
+      const nextHash = `#game/${view.slice(5)}`;
+      if (window.location.hash !== nextHash) window.history.replaceState(null, '', nextHash);
+    } else if (window.location.hash.startsWith('#game/')) {
+      window.history.replaceState(null, '', window.location.pathname);
+    }
+  }, [view]);
 
   // Sync Body Accessibility Classes
   useEffect(() => {
@@ -1357,6 +1379,13 @@ function PatientExperience({
   setShowVoiceModal,
   t
 }) {
+  const directGameId = view.startsWith('game:') ? view.slice(5) : null;
+  if (directGameId) {
+    return <StandaloneGameFlow key={directGameId} gameId={directGameId} patient={patient} setView={setView}
+      soundEffects={soundEffects} triggerConfetti={triggerConfetti} voiceLanguage={voiceLanguage}
+      speechSpeed={speechSpeed} autoReadAloud={autoReadAloud} interfaceLanguage={interfaceLanguage}
+      familyMembers={familyMembers} t={t} />;
+  }
   if (view === 'session') {
     return (
       <TodaySessionFlow
@@ -1820,6 +1849,30 @@ function PatientDashboardView({
 // ==========================================
 // TODAY'S GUIDED SESSION FLOW (WITH VOICE PACK)
 // ==========================================
+function StandaloneGameFlow({ gameId, patient, setView, soundEffects, triggerConfetti, voiceLanguage, speechSpeed, autoReadAloud, interfaceLanguage, familyMembers, t }) {
+  const [game, setGame] = useState(null);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    fetch(`/api/games/${encodeURIComponent(gameId)}`)
+      .then(response => response.ok ? response.json() : Promise.reject(new Error('Game not found')))
+      .then(data => !cancelled && setGame(data))
+      .catch(() => !cancelled && setError('This game could not be loaded. Please return to the games page and try again.'));
+    return () => { cancelled = true; voiceService.stop(); };
+  }, [gameId]);
+
+  if (error) return <div className="bg-white rounded-3xl p-8 text-center space-y-4"><p className="text-stone-600">{error}</p><button onClick={() => setView('catalog')} className="px-5 py-3 rounded-xl bg-peach-500 text-white font-semibold">Back to Games</button></div>;
+  if (!game) return <div className="py-16 text-center text-stone-500">Preparing this activity...</div>;
+  return <TodaySessionFlow
+    todaySession={{ session_id: `standalone_${gameId}`, activities: [{ ...game, game_id: gameId }] }}
+    setTodaySession={() => {}} patient={patient} setView={setView} soundEffects={soundEffects}
+    voiceGuidance={true} triggerConfetti={triggerConfetti} onDataRefresh={() => {}}
+    voiceLanguage={voiceLanguage} speechSpeed={speechSpeed} autoReadAloud={autoReadAloud}
+    interfaceLanguage={interfaceLanguage} familyMembers={familyMembers} t={t} sessionMode={false}
+  />;
+}
+
 function TodaySessionFlow({
   todaySession,
   setTodaySession,
@@ -1834,16 +1887,17 @@ function TodaySessionFlow({
   autoReadAloud,
   interfaceLanguage,
   familyMembers,
-  t
+  t,
+  sessionMode = true
 }) {
-  const [currentActivityIndex, setCurrentActivityIndex] = useState(0);
+  const [currentActivityIndex, setCurrentActivityIndex] = useState(todaySession?.current_activity_index || 0);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [selectedOption, setSelectedOption] = useState(null);
   const [hintsUnlocked, setHintsUnlocked] = useState(0);
   const [isAnswerSubmitted, setIsAnswerSubmitted] = useState(false);
   const [isCorrect, setIsCorrect] = useState(false);
   const [startTime, setStartTime] = useState(Date.now());
-  const [sessionCompleted, setSessionCompleted] = useState(false);
+  const [sessionCompleted, setSessionCompleted] = useState(Boolean(todaySession?.completed));
   
   // Specific State for Game 2 (Recall memory countdown)
   const [recallCountdown, setRecallCountdown] = useState(0);
@@ -1973,6 +2027,15 @@ function TodaySessionFlow({
     if (currentQuestionIndex < questions.length - 1) {
       setCurrentQuestionIndex(q => q + 1);
     } else if (currentActivityIndex < activities.length - 1) {
+      if (sessionMode) {
+        const response = await fetch('/api/games/today-session/progress', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: todaySession.session_id, game_id: currentActivity.game_id })
+        });
+        if (!response.ok) return;
+        const saved = await response.json();
+        setTodaySession({ ...todaySession, ...saved.session });
+      }
       setCurrentActivityIndex(a => a + 1);
       setCurrentQuestionIndex(0);
     } else {
@@ -1988,10 +2051,17 @@ function TodaySessionFlow({
       voiceService.speak(completionSpoken, voiceLanguage, speechSpeed);
 
       try {
+        if (!sessionMode) return;
+        const progress = await fetch('/api/games/today-session/progress', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ session_id: todaySession.session_id, game_id: currentActivity.game_id })
+        });
+        if (!progress.ok) throw new Error('Could not save game progress');
         await fetch('/api/sessions/complete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
+            session_id: todaySession.session_id,
             activities_completed: activities.length,
             duration_minutes: 8,
             stars: 5
@@ -2717,7 +2787,7 @@ function GamesCatalogView({ setView, soundEffects, interfaceLanguage, voiceLangu
             key={g.id}
             onClick={() => {
               if (soundEffects) sounds.playChime('tap');
-              setView('session');
+              setView(`game:${g.id}`);
             }}
             className="bg-white rounded-3xl p-6 border border-cream-200 gentle-shadow gentle-shadow-hover transition cursor-pointer flex flex-col justify-between"
           >

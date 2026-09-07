@@ -8,7 +8,7 @@
     "region": "Delhi / NCR",
     "language": "Hindi & English",
     "bio": "Retired railway engineer who loves morning tea on the balcony, Ghazals, and playing with his grandson.",
-    "streak_days": 8,
+    "streak_days": 11,
     "total_sessions_completed": 22,
     "current_session_done_today": true,
     "last_session_date": "2026-09-07",
@@ -149,7 +149,7 @@
           "title": "Take afternoon multivitamin",
           "time": "1:45 PM",
           "icon": "Pill",
-          "completed": false
+          "completed": true
         },
         {
           "id": "a3",
@@ -260,6 +260,17 @@
       "badge": "Medication",
       "completed": false,
       "due_period": "Night"
+    },
+    {
+      "id": "rem_1788800262",
+      "type": "medication",
+      "title": "night multivitammins",
+      "description": "take it with water",
+      "time": "10;00 pm",
+      "icon": "Bell",
+      "badge": "Medication",
+      "completed": false,
+      "due_period": "Daily"
     }
   ],
   "cultural_preferences": {
@@ -310,25 +321,25 @@
     "memory": {
       "name": "Remember & Recall",
       "level": 2,
-      "accuracy_pct": 77,
+      "accuracy_pct": 88,
       "trend": "stable",
-      "hints_avg": 0.9,
+      "hints_avg": 0.4,
       "description": "Benefits from visual association and gentle hints when recalling 4+ objects."
     },
     "attention": {
       "name": "Focus & Attention",
       "level": 3,
-      "accuracy_pct": 85,
+      "accuracy_pct": 87,
       "trend": "up",
-      "hints_avg": 0.3,
+      "hints_avg": 0.2,
       "description": "High focus during colorful target spotting with prompt reaction times."
     },
     "sequencing": {
       "name": "Daily Routine & Order",
       "level": 4,
-      "accuracy_pct": 91,
+      "accuracy_pct": 92,
       "trend": "up",
-      "hints_avg": 0.5,
+      "hints_avg": 0.4,
       "description": "Consistent ordering of daily morning steps, brushing, bathing, and meals."
     },
     "semantic": {
@@ -342,9 +353,9 @@
     "language": {
       "name": "Words & Language",
       "level": 3,
-      "accuracy_pct": 79,
+      "accuracy_pct": 89,
       "trend": "stable",
-      "hints_avg": 0.8,
+      "hints_avg": 0.3,
       "description": "Quickly completes common words, opposites, and everyday object naming."
     },
     "culture": {
@@ -358,9 +369,9 @@
     "reasoning": {
       "name": "Sequence & Reasoning",
       "level": 2,
-      "accuracy_pct": 79,
+      "accuracy_pct": 82,
       "trend": "stable",
-      "hints_avg": 0.8,
+      "hints_avg": 0.6,
       "description": "Comfortable with step patterns (2, 4, 6) and daily logic with supportive reassurance."
     }
   },
@@ -848,6 +859,358 @@
       "hints_used": 0,
       "response_time_ms": 1161,
       "timestamp": "2026-09-07T18:23:54.003878"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 4548,
+      "timestamp": "2026-09-07T22:10:34.723453"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1467,
+      "timestamp": "2026-09-07T22:10:37.162585"
+    },
+    {
+      "question_id": "gr_q1",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 6388,
+      "timestamp": "2026-09-07T22:12:42.279692"
+    },
+    {
+      "question_id": "gr_q2",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1802,
+      "timestamp": "2026-09-07T22:12:45.374648"
+    },
+    {
+      "question_id": "gw_q1",
+      "game_type": "language",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 3789,
+      "timestamp": "2026-09-07T22:13:14.773190"
+    },
+    {
+      "question_id": "gw_q2",
+      "game_type": "language",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 2680,
+      "timestamp": "2026-09-07T22:13:18.486110"
+    },
+    {
+      "question_id": "gw_q1",
+      "game_type": "language",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1096,
+      "timestamp": "2026-09-07T22:13:32.363055"
+    },
+    {
+      "question_id": "gw_q2",
+      "game_type": "language",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 999,
+      "timestamp": "2026-09-07T22:13:34.649718"
+    },
+    {
+      "question_id": "gfc_q1",
+      "game_type": "attention",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 9431,
+      "timestamp": "2026-09-07T22:18:13.730449"
+    },
+    {
+      "question_id": "gr_q1",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 5751,
+      "timestamp": "2026-09-07T22:19:35.027224"
+    },
+    {
+      "question_id": "gr_q2",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 3789,
+      "timestamp": "2026-09-07T22:19:39.990218"
+    },
+    {
+      "question_id": "grp_q1",
+      "game_type": "sequencing",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 9499,
+      "timestamp": "2026-09-07T22:19:55.094530"
+    },
+    {
+      "question_id": "grs_q1",
+      "game_type": "reasoning",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 2793,
+      "timestamp": "2026-09-07T22:20:08.256538"
     }
-  ]
+  ],
+  "daily_session": {
+    "session_id": "daily_pat_001_2026-09-07",
+    "patient_id": "pat_001",
+    "date": "2026-09-07",
+    "activities": [
+      {
+        "order": 1,
+        "game_id": "game_faces",
+        "title": "Familiar Faces",
+        "category": "Recognition",
+        "icon": "Users",
+        "color": "peach",
+        "bg": "bg-amber-50 border-amber-200 text-amber-800",
+        "description": "Recognize beloved children, grandchildren, and dear memories through photos.",
+        "questions": [
+          {
+            "id": "gf_q1",
+            "game_type": "recognition",
+            "title": "Who is this familiar smiling person?",
+            "subtitle": "Look at the photo and choose their name.",
+            "image": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=faces",
+            "options": [
+              "Priya",
+              "Ankit",
+              "Meera",
+              "Aarav"
+            ],
+            "correct_answer": "Priya",
+            "hints": [
+              "💡 This person is a cherished member of your family.",
+              "💡 This is your loving daughter.",
+              "💡 Their name starts with the letter 'P'."
+            ],
+            "explanation": "Wonderful! You remembered Priya, your loving daughter! ❤️",
+            "audio_text": "Who is this familiar smiling person? Look at the photo and choose their name."
+          },
+          {
+            "id": "gf_q2",
+            "game_type": "recognition",
+            "title": "What is your special relationship with Ankit?",
+            "subtitle": "Tap the relationship that matches.",
+            "image": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=faces",
+            "options": [
+              "Son",
+              "Neighbor",
+              "Assistant",
+              "Teacher"
+            ],
+            "correct_answer": "Son",
+            "hints": [
+              "💡 She is one of the closest members of your immediate family.",
+              "💡 She calls you every morning to check on your health.",
+              "💡 She is your loving Son."
+            ],
+            "explanation": "Spot on! Ankit is your devoted Son. ❤️",
+            "audio_text": "What is your special relationship with Ankit?"
+          }
+        ],
+        "completed": true
+      },
+      {
+        "order": 2,
+        "game_id": "game_routine",
+        "title": "Daily Routine Puzzle",
+        "category": "Routine",
+        "icon": "CalendarCheck",
+        "color": "sage",
+        "bg": "bg-emerald-50 border-emerald-200 text-emerald-800",
+        "description": "Organize your favorite daily morning or evening habits in comfortable sequence.",
+        "questions": [
+          {
+            "id": "grp_q1",
+            "game_type": "sequencing",
+            "title": "What is the natural order for morning wake up?",
+            "subtitle": "Tap or arrange these three morning habits from first to last.",
+            "puzzle_type": "order_sequence",
+            "initial_steps": [
+              {
+                "step_id": "s3",
+                "text": "Have warm healthy breakfast 🥣",
+                "order": 3
+              },
+              {
+                "step_id": "s1",
+                "text": "Gently wake up & stretch 🌅",
+                "order": 1
+              },
+              {
+                "step_id": "s2",
+                "text": "Brush teeth & freshen up 🪥",
+                "order": 2
+              }
+            ],
+            "correct_sequence": [
+              "s1",
+              "s2",
+              "s3"
+            ],
+            "hints": [
+              "💡 Think about the very first thing your eyes do when morning arrives.",
+              "💡 After opening your eyes, you freshen your teeth and face.",
+              "💡 Breakfast is enjoyed after freshening up!"
+            ],
+            "explanation": "Excellent routine awareness! Waking up, freshening up, then breakfast keeps your day peaceful.",
+            "audio_text": "What do you normally do first in the morning? Arrange the steps from first to last."
+          }
+        ],
+        "completed": true
+      },
+      {
+        "order": 3,
+        "game_id": "game_recall",
+        "title": "Remember & Recall",
+        "category": "Memory",
+        "icon": "Brain",
+        "color": "lavender",
+        "bg": "bg-purple-50 border-purple-200 text-purple-800",
+        "description": "View familiar everyday objects, watch them rest, and recall what you noticed.",
+        "questions": [
+          {
+            "id": "gr_q1",
+            "game_type": "memory",
+            "title": "Remember these 4 everyday items",
+            "subtitle": "Look carefully at these objects. In a moment, they will hide!",
+            "preview_duration_sec": 5,
+            "display_items": [
+              {
+                "name": "Apple",
+                "emoji": "🍎"
+              },
+              {
+                "name": "Key",
+                "emoji": "🔑"
+              },
+              {
+                "name": "Glasses",
+                "emoji": "🕶️"
+              },
+              {
+                "name": "Chai Cup",
+                "emoji": "☕"
+              }
+            ],
+            "question": "Which of these objects was on the tray?",
+            "options": [
+              "Apple 🍎",
+              "Train Ticket 🎫",
+              "Umbrella ☂️",
+              "Sunflower 🌻"
+            ],
+            "correct_answer": "Apple 🍎",
+            "hints": [
+              "💡 Think back to the fresh red fruit displayed on the left.",
+              "💡 It is sweet, crisp, and keeps the doctor away!",
+              "💡 It is an Apple 🍎."
+            ],
+            "explanation": "Great memory! You spotted the red apple 🍎 right away.",
+            "audio_text": "Which of these objects did you just see on the tray?"
+          },
+          {
+            "id": "gr_q2",
+            "game_type": "memory",
+            "title": "Recall the second item",
+            "subtitle": "From the same collection of items you just viewed:",
+            "preview_duration_sec": 0,
+            "question": "Which everyday tool was on the tray to unlock doors?",
+            "options": [
+              "Key 🔑",
+              "Hammer 🔨",
+              "Watch ⌚",
+              "Pen ✒️"
+            ],
+            "correct_answer": "Key 🔑",
+            "hints": [
+              "💡 It is made of metal and used with a door lock.",
+              "💡 You carry it in your pocket when going out.",
+              "💡 It is the brass door Key 🔑."
+            ],
+            "explanation": "Superb! The key 🔑 was indeed on the tray.",
+            "audio_text": "Which everyday tool was on the tray to unlock doors?"
+          }
+        ],
+        "completed": true
+      },
+      {
+        "order": 4,
+        "game_id": "game_culture",
+        "title": "Culture & Familiarity",
+        "category": "Culture",
+        "icon": "Sparkles",
+        "color": "rose",
+        "bg": "bg-rose-50 border-rose-200 text-rose-800",
+        "description": "Celebrate fond memories of traditional festivals, music, and home flavors.",
+        "questions": [
+          {
+            "id": "gc_q1",
+            "game_type": "culture",
+            "title": "Which joyful festival is celebrated with lights & diyas?",
+            "subtitle": "Connect the traditional lamp to its beloved celebration.",
+            "image": "https://images.unsplash.com/photo-1512418490979-92798cec1380?w=500&h=350&fit=crop",
+            "item_emoji": "🪔",
+            "question": "Lighting small earthen clay lamps (Diyas) is the heart of which festival?",
+            "options": [
+              "Diwali (Deepavali) 🪔",
+              "Holi (Festival of Colors) 🎨",
+              "Eid 🌙",
+              "New Year 🎆"
+            ],
+            "correct_answer": "Diwali (Deepavali) 🪔",
+            "hints": [
+              "💡 The celebration of lights, sweets, and welcoming prosperity.",
+              "💡 Every home is illuminated with clay diyas and fairy lights.",
+              "💡 It is Diwali 🪔!"
+            ],
+            "explanation": "Wonderful memories! Diwali brings warmth, light, and delicious sweets to everyone.",
+            "audio_text": "Lighting small earthen clay lamps is the heart of which festival?"
+          },
+          {
+            "id": "gc_q2",
+            "game_type": "culture",
+            "title": "Familiar Flavors of Home",
+            "subtitle": "Recognize this beloved soothing beverage.",
+            "image": "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=500&h=350&fit=crop",
+            "item_emoji": "☕",
+            "question": "What warm, spiced beverage is brewed with ginger and cardamom for morning tea time?",
+            "options": [
+              "Masala Chai ☕",
+              "Cold Lemon Soda 🥤",
+              "Iced Water 🧊",
+              "Orange Juice 🍊"
+            ],
+            "correct_answer": "Masala Chai ☕",
+            "hints": [
+              "💡 Brewed with tea leaves, milk, ginger, and elaichi.",
+              "💡 Enjoyed fresh in the morning from a clay kulhad or favorite mug.",
+              "💡 Masala Chai ☕!"
+            ],
+            "explanation": "Delicious! Nothing comforts the soul like a warm cup of morning Masala Chai.",
+            "audio_text": "What warm spiced beverage is brewed with ginger and cardamom for morning tea?"
+          }
+        ],
+        "completed": true
+      }
+    ],
+    "current_activity_index": 3,
+    "completed": true,
+    "completed_at": null
+  }
 }

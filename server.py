@@ -1,6 +1,8 @@
 import json
 import os
 import time
+import threading
+from functools import wraps
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
@@ -9,6 +11,7 @@ app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
 
 DATA_FILE = os.path.join(os.path.dirname(__file__), 'data.json')
+DATA_LOCK = threading.RLock()
 VOICE_LANGUAGE_IDS = {'en', 'hi', 'pa', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml'}
 INTERFACE_LANGUAGE_IDS = {'en', 'hi'}
 SPEECH_SPEEDS = {'slow', 'normal', 'fast'}
@@ -371,6 +374,60 @@ def load_data():
 def save_data(data):
     with open(DATA_FILE, 'w', encoding='utf-8') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
+
+def data_locked(handler):
+    """Serialize JSON read-modify-write handlers in this single-process app."""
+    @wraps(handler)
+    def wrapped(*args, **kwargs):
+        with DATA_LOCK:
+            return handler(*args, **kwargs)
+    return wrapped
+
+GAME_IDS = {
+    "game_faces", "game_recall", "game_focus", "game_routine",
+    "game_match", "game_words", "game_culture", "game_reasoning"
+}
+
+def local_day():
+    """Use one server-local ISO date for all daily-session comparisons."""
+    return datetime.now().strftime("%Y-%m-%d")
+
+def build_daily_session(data):
+    """Create the immutable plan once; later reads return this exact plan."""
+    catalog_map = {g["id"]: g for g in json.loads(get_game_catalog().data)}
+    game_ids = get_next_recommended_games(data)
+    activities = []
+    for index, game_id in enumerate(game_ids):
+        game = catalog_map[game_id]
+        activities.append({
+            "order": index + 1, "game_id": game_id, "title": game["title"],
+            "category": game["category"], "icon": game["icon"], "color": game["color"],
+            "bg": game["bg"], "description": game["description"],
+            "questions": generate_questions_for_game(game_id, data), "completed": False
+        })
+    return {
+        "session_id": f"daily_{data['patient']['id']}_{local_day()}",
+        "patient_id": data["patient"]["id"], "date": local_day(),
+        "activities": activities, "current_activity_index": 0, "completed": False,
+        "completed_at": None
+    }
+
+def get_or_create_daily_session(data):
+    """Idempotent USER + DATE session creation, protected for concurrent requests."""
+    today = local_day()
+    session = data.get("daily_session")
+    if not session or session.get("patient_id") != data["patient"]["id"] or session.get("date") != today:
+        session = build_daily_session(data)
+        # Preserve a legacy completed day when upgrading data that predates daily_session.
+        legacy_completed = data["patient"].get("current_session_done_today") and data["patient"].get("last_session_date") == today
+        if legacy_completed:
+            for activity in session["activities"]:
+                activity["completed"] = True
+            session["current_activity_index"] = max(len(session["activities"]) - 1, 0)
+            session["completed"] = True
+        data["daily_session"] = session
+        data["patient"]["current_session_done_today"] = bool(legacy_completed)
+    return session
 
 # ==========================================
 # 3-TIER ADAPTIVE INTELLIGENCE ENGINE
@@ -934,37 +991,47 @@ def get_game_catalog():
 
 @app.route('/api/games/today-session', methods=['GET'])
 def get_today_session():
-    data = load_data()
-    recommended_game_ids = get_next_recommended_games(data)
-    
-    catalog_map = {g["id"]: g for g in json.loads(get_game_catalog().data)}
-    session_activities = []
-    for idx, gid in enumerate(recommended_game_ids):
-        base_game = catalog_map.get(gid, catalog_map["game_faces"])
-        questions = generate_questions_for_game(gid, data)
-        session_activities.append({
-            "order": idx + 1,
-            "game_id": gid,
-            "title": base_game["title"],
-            "category": base_game["category"],
-            "icon": base_game["icon"],
-            "color": base_game["color"],
-            "bg": base_game["bg"],
-            "description": base_game["description"],
-            "questions": questions
-        })
+    with DATA_LOCK:
+        data = load_data()
+        session = get_or_create_daily_session(data)
+        save_data(data)
+        return jsonify({**session, "patient_name": data["patient"]["preferred_name"],
+                        "activities_count": len(session["activities"]),
+                        "completed_today": session["completed"],
+                        "streak_days": data["patient"].get("streak_days", 5)})
 
-    return jsonify({
-        "session_id": f"ses_{datetime.now().strftime('%Y%m%d')}",
-        "patient_name": data["patient"]["preferred_name"],
-        "date": datetime.now().strftime("%B %d, %Y"),
-        "activities_count": len(session_activities),
-        "activities": session_activities,
-        "completed_today": data["patient"].get("current_session_done_today", False),
-        "streak_days": data["patient"].get("streak_days", 5)
-    })
+@app.route('/api/games/<game_id>', methods=['GET'])
+def get_game(game_id):
+    if game_id not in GAME_IDS:
+        return jsonify({"error": "Unknown game"}), 404
+    data = load_data()
+    catalog = {g["id"]: g for g in json.loads(get_game_catalog().data)}[game_id]
+    return jsonify({**catalog, "game_id": game_id,
+                    "questions": generate_questions_for_game(game_id, data)})
+
+@app.route('/api/games/today-session/progress', methods=['POST'])
+def update_daily_session_progress():
+    payload = request.json or {}
+    with DATA_LOCK:
+        data = load_data()
+        session = get_or_create_daily_session(data)
+        if payload.get("session_id") != session["session_id"]:
+            return jsonify({"error": "Session does not match today's session"}), 409
+        game_id = payload.get("game_id")
+        for index, activity in enumerate(session["activities"]):
+            if activity["game_id"] == game_id:
+                if not activity.get("completed") and index != session.get("current_activity_index", 0):
+                    return jsonify({"error": "Complete the current scheduled game first"}), 409
+                activity["completed"] = True
+                session["current_activity_index"] = min(index + 1, len(session["activities"]) - 1)
+                break
+        else:
+            return jsonify({"error": "Game is not scheduled in this session"}), 400
+        save_data(data)
+        return jsonify({"success": True, "session": session})
 
 @app.route('/api/sessions/record-attempt', methods=['POST'])
+@data_locked
 def record_attempt():
     data = load_data()
     payload = request.json or {}
@@ -1012,30 +1079,39 @@ def record_attempt():
 
 @app.route('/api/sessions/complete', methods=['POST'])
 def complete_session():
-    data = load_data()
     payload = request.json or {}
+    with DATA_LOCK:
+        data = load_data()
+        session = get_or_create_daily_session(data)
+        if payload.get("session_id") != session["session_id"]:
+            return jsonify({"error": "Session does not match today's session"}), 409
+        if session.get("completed"):
+            return jsonify({"success": True, "already_completed": True, "patient": data["patient"]})
+        if not all(activity.get("completed") for activity in session["activities"]):
+            return jsonify({"error": "Complete each scheduled game before finishing"}), 409
 
-    activities_completed = payload.get("activities_completed", 4)
-    duration_min = payload.get("duration_minutes", 8)
-    stars = payload.get("stars", 5)
+        activities_completed = len(session["activities"])
+        duration_min = payload.get("duration_minutes", 8)
+        stars = payload.get("stars", 5)
+        session["completed"] = True
+        session["completed_at"] = datetime.now().isoformat()
+        data["patient"]["current_session_done_today"] = True
+        data["patient"]["total_sessions_completed"] += 1
+        data["patient"]["last_session_date"] = local_day()
 
-    data["patient"]["current_session_done_today"] = True
-    data["patient"]["total_sessions_completed"] += 1
-    data["patient"]["last_session_date"] = datetime.now().strftime("%Y-%m-%d")
+        new_session_record = {
+            "session_id": session["session_id"],
+            "date": local_day(),
+            "completed_activities": activities_completed,
+            "duration_minutes": duration_min,
+            "encouragement": "Wonderful focus and warmth today! You completed all activities with a smile.",
+            "stars": stars,
+            "skills_practiced": ["Recognition", "Routine", "Memory", "Culture"],
+            "accuracy": 90
+        }
+        data["history_sessions"].insert(0, new_session_record)
 
-    new_session_record = {
-        "session_id": f"ses_{int(time.time())}",
-        "date": datetime.now().strftime("%Y-%m-%d"),
-        "completed_activities": activities_completed,
-        "duration_minutes": duration_min,
-        "encouragement": "Wonderful focus and warmth today! You completed all activities with a smile.",
-        "stars": stars,
-        "skills_practiced": ["Recognition", "Routine", "Memory", "Culture"],
-        "accuracy": 90
-    }
-    data["history_sessions"].insert(0, new_session_record)
-
-    new_alert = {
+        new_alert = {
         "id": f"alt_{int(time.time())}",
         "severity": "success",
         "title": f"Daily Wellness Session Completed 🎉",
@@ -1043,9 +1119,8 @@ def complete_session():
         "timestamp": "Just now",
         "action_taken": "Session recorded; next recommended activities scheduled for tomorrow."
     }
-    data["alerts"].insert(0, new_alert)
-
-    save_data(data)
+        data["alerts"].insert(0, new_alert)
+        save_data(data)
     return jsonify({
         "success": True,
         "message": "Session completed successfully! You did wonderful work today. ❤️",
