@@ -1,0 +1,612 @@
+{
+  "patient": {
+    "id": "pat_001",
+    "name": "Devendra Sharma",
+    "preferred_name": "Devendra Ji",
+    "age": 72,
+    "avatar": "https://images.unsplash.com/photo-1506794778202-cad84cf45f1d?w=300&h=300&fit=crop&crop=faces",
+    "region": "Delhi / NCR",
+    "language": "Hindi & English",
+    "bio": "Retired railway engineer who loves morning tea on the balcony, Ghazals, and playing with his grandson.",
+    "streak_days": 8,
+    "total_sessions_completed": 19,
+    "current_session_done_today": true,
+    "last_session_date": "2026-09-07",
+    "onboarding_completed": true,
+    "settings": {
+      "font_size": "large",
+      "voice_guidance": true,
+      "interface_language": "en",
+      "voice_language": "hi",
+      "voice_enabled": true,
+      "auto_read_aloud": true,
+      "speech_speed": "normal",
+      "sound_effects": true,
+      "high_contrast": false,
+      "theme": "pastel_warm"
+    }
+  },
+  "caregiver": {
+    "id": "cg_001",
+    "name": "Dr. Ananya Sharma",
+    "relationship": "Daughter",
+    "phone": "+91 98765 43210",
+    "email": "ananya.sharma@example.com",
+    "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&h=300&fit=crop&crop=faces",
+    "role": "Primary Caregiver & Neurologist"
+  },
+  "family_members": [
+    {
+      "id": "fam_1",
+      "name": "Rohan",
+      "full_name": "Rohan Sharma",
+      "relationship": "Grandson",
+      "nickname": "Chintu",
+      "photo": "https://images.unsplash.com/photo-1539571696357-5a69c17a67c6?w=400&h=400&fit=crop&crop=faces",
+      "familiarity_notes": "Studies computer science in Delhi. Visits every Sunday evening.",
+      "favorite_activity": "Playing chess and talking about trains",
+      "times_recognized": 24,
+      "last_recognized": "Yesterday"
+    },
+    {
+      "id": "fam_2",
+      "name": "Priya",
+      "full_name": "Dr. Priya Sharma",
+      "relationship": "Daughter",
+      "nickname": "Guddi",
+      "photo": "https://images.unsplash.com/photo-1544005313-94ddf0286df2?w=400&h=400&fit=crop&crop=faces",
+      "familiarity_notes": "Lives nearby in South Delhi. Calls every morning at 9:00 AM.",
+      "favorite_activity": "Sharing herbal morning tea and old family recipes",
+      "times_recognized": 28,
+      "last_recognized": "Today"
+    },
+    {
+      "id": "fam_3",
+      "name": "Ankit",
+      "full_name": "Ankit Sharma",
+      "relationship": "Son",
+      "nickname": "Chhotu",
+      "photo": "https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=400&h=400&fit=crop&crop=faces",
+      "familiarity_notes": "Architect living in Bangalore. Video calls on weekends.",
+      "favorite_activity": "Showing new building designs and vintage blueprints",
+      "times_recognized": 19,
+      "last_recognized": "3 days ago"
+    },
+    {
+      "id": "fam_4",
+      "name": "Meera",
+      "full_name": "Meera Sharma",
+      "relationship": "Beloved Wife",
+      "nickname": "Meeru",
+      "photo": "https://images.unsplash.com/photo-1548142813-c348350df52b?w=400&h=400&fit=crop&crop=faces",
+      "familiarity_notes": "Married for 46 wonderful years. Loved gardening roses and classical harmonium.",
+      "favorite_activity": "Listening to old Mohammad Rafi ghazals",
+      "times_recognized": 32,
+      "last_recognized": "2 days ago"
+    },
+    {
+      "id": "fam_5",
+      "name": "Aarav",
+      "full_name": "Aarav Sharma",
+      "relationship": "Great-Nephew",
+      "nickname": "Bablu",
+      "photo": "https://images.unsplash.com/photo-1519085360753-af0119f7cbe7?w=400&h=400&fit=crop&crop=faces",
+      "familiarity_notes": "7 years old. Loves drawing cricket bats and airplanes for grandpa.",
+      "favorite_activity": "Reading picture storybooks together",
+      "times_recognized": 15,
+      "last_recognized": "4 days ago"
+    }
+  ],
+  "routines": [
+    {
+      "id": "rt_morning",
+      "category": "Morning Routine",
+      "period": "Morning (7:00 AM - 10:00 AM)",
+      "icon": "Sun",
+      "color": "amber",
+      "steps": [
+        {
+          "id": "m1",
+          "title": "Wake up gently & drink warm water",
+          "time": "7:00 AM",
+          "icon": "GlassWater",
+          "completed": true
+        },
+        {
+          "id": "m2",
+          "title": "Brush teeth & freshen up",
+          "time": "7:30 AM",
+          "icon": "Sparkles",
+          "completed": true
+        },
+        {
+          "id": "m3",
+          "title": "Gentle balcony walk & deep breathing",
+          "time": "8:00 AM",
+          "icon": "Footprints",
+          "completed": true
+        },
+        {
+          "id": "m4",
+          "title": "Take morning blood pressure tablet",
+          "time": "8:30 AM",
+          "icon": "Pill",
+          "completed": true
+        },
+        {
+          "id": "m5",
+          "title": "Warm breakfast: Poha & mild ginger tea",
+          "time": "9:00 AM",
+          "icon": "UtensilsCrossed",
+          "completed": true
+        }
+      ]
+    },
+    {
+      "id": "rt_afternoon",
+      "category": "Afternoon Routine",
+      "period": "Afternoon (12:00 PM - 3:00 PM)",
+      "icon": "SunMedium",
+      "color": "blue",
+      "steps": [
+        {
+          "id": "a1",
+          "title": "Light nutritious lunch & fresh curd",
+          "time": "1:00 PM",
+          "icon": "Utensils",
+          "completed": false
+        },
+        {
+          "id": "a2",
+          "title": "Take afternoon multivitamin",
+          "time": "1:45 PM",
+          "icon": "Pill",
+          "completed": false
+        },
+        {
+          "id": "a3",
+          "title": "Relaxing afternoon rest / Ghazal music",
+          "time": "2:00 PM",
+          "icon": "Music",
+          "completed": false
+        },
+        {
+          "id": "a4",
+          "title": "CogniCare wellness session",
+          "time": "3:30 PM",
+          "icon": "Brain",
+          "completed": false
+        }
+      ]
+    },
+    {
+      "id": "rt_evening",
+      "category": "Evening Routine",
+      "period": "Evening (6:00 PM - 9:30 PM)",
+      "icon": "Moon",
+      "color": "indigo",
+      "steps": [
+        {
+          "id": "e1",
+          "title": "Evening herbal tea & family phone call",
+          "time": "6:00 PM",
+          "icon": "PhoneCall",
+          "completed": false
+        },
+        {
+          "id": "e2",
+          "title": "Light home dinner with family",
+          "time": "8:00 PM",
+          "icon": "Utensils",
+          "completed": false
+        },
+        {
+          "id": "e3",
+          "title": "Night heart & cholesterol medicine",
+          "time": "8:45 PM",
+          "icon": "Pill",
+          "completed": false
+        },
+        {
+          "id": "e4",
+          "title": "Soothing bedtime reading & good sleep",
+          "time": "9:30 PM",
+          "icon": "BedDouble",
+          "completed": false
+        }
+      ]
+    }
+  ],
+  "reminders": [
+    {
+      "id": "rem_1",
+      "type": "medication",
+      "title": "Morning Blood Pressure Tablet",
+      "description": "Take 1 tablet with a glass of warm water after light snack",
+      "time": "08:30 AM",
+      "icon": "Pill",
+      "badge": "Medication",
+      "completed": true,
+      "due_period": "Morning"
+    },
+    {
+      "id": "rem_2",
+      "type": "cognitive",
+      "title": "Today's Cognitive Wellness Session",
+      "description": "Play 4 fun, familiar activities together",
+      "time": "10:30 AM",
+      "icon": "Brain",
+      "badge": "Daily Activity",
+      "completed": false,
+      "due_period": "Morning"
+    },
+    {
+      "id": "rem_3",
+      "type": "meal",
+      "title": "Time for Lunch",
+      "description": "Warm yellow dal, roti, and fresh cucumber salad",
+      "time": "01:00 PM",
+      "icon": "UtensilsCrossed",
+      "badge": "Meal",
+      "completed": false,
+      "due_period": "Afternoon"
+    },
+    {
+      "id": "rem_4",
+      "type": "family",
+      "title": "Video Call with Daughter Priya",
+      "description": "Priya loves seeing your smile and talking about family recipes",
+      "time": "06:00 PM",
+      "icon": "PhoneCall",
+      "badge": "Family Time",
+      "completed": false,
+      "due_period": "Evening"
+    },
+    {
+      "id": "rem_5",
+      "type": "medication",
+      "title": "Night Heart Medicine",
+      "description": "1 tablet after dinner before sleep",
+      "time": "08:45 PM",
+      "icon": "Pill",
+      "badge": "Medication",
+      "completed": false,
+      "due_period": "Night"
+    }
+  ],
+  "cultural_preferences": {
+    "region": "Delhi / Haryana",
+    "languages": [
+      "Hindi",
+      "English"
+    ],
+    "favorite_festivals": [
+      "Diwali",
+      "Holi",
+      "Baisakhi",
+      "Dussehra"
+    ],
+    "favorite_foods": [
+      "Aloo Paratha",
+      "Poha",
+      "Dal Makhani",
+      "Kheer"
+    ],
+    "favorite_music": [
+      "Old Bollywood Classics",
+      "Mohammad Rafi Ghazals",
+      "Bhakti Bhajans"
+    ],
+    "favorite_places": [
+      "India Gate, New Delhi",
+      "Lodhi Garden",
+      "Shimla Hills",
+      "Chandni Chowk"
+    ],
+    "traditional_objects": [
+      "Diya (🪔)",
+      "Clay Chai Kulhad (🍵)",
+      "Dholak (🥁)",
+      "Brass Bell (🔔)"
+    ]
+  },
+  "skill_profile": {
+    "recognition": {
+      "name": "Familiar Recognition",
+      "level": 4,
+      "accuracy_pct": 97,
+      "trend": "up",
+      "hints_avg": 0.2,
+      "description": "Exceptional familiarity identifying grandson Rohan, daughter Priya, and close relatives."
+    },
+    "memory": {
+      "name": "Remember & Recall",
+      "level": 2,
+      "accuracy_pct": 68,
+      "trend": "stable",
+      "hints_avg": 1.4,
+      "description": "Benefits from visual association and gentle hints when recalling 4+ objects."
+    },
+    "attention": {
+      "name": "Focus & Attention",
+      "level": 3,
+      "accuracy_pct": 85,
+      "trend": "up",
+      "hints_avg": 0.3,
+      "description": "High focus during colorful target spotting with prompt reaction times."
+    },
+    "sequencing": {
+      "name": "Daily Routine & Order",
+      "level": 3,
+      "accuracy_pct": 88,
+      "trend": "up",
+      "hints_avg": 0.6,
+      "description": "Consistent ordering of daily morning steps, brushing, bathing, and meals."
+    },
+    "semantic": {
+      "name": "Match & Associate",
+      "level": 3,
+      "accuracy_pct": 82,
+      "trend": "stable",
+      "hints_avg": 0.7,
+      "description": "Strong associations between family members, common household tools, and their uses."
+    },
+    "language": {
+      "name": "Words & Language",
+      "level": 3,
+      "accuracy_pct": 79,
+      "trend": "stable",
+      "hints_avg": 0.8,
+      "description": "Quickly completes common words, opposites, and everyday object naming."
+    },
+    "culture": {
+      "name": "Culture & Familiarity",
+      "level": 4,
+      "accuracy_pct": 95,
+      "trend": "up",
+      "hints_avg": 0.2,
+      "description": "Deep autobiographical warmth with festive traditions, regional food, and melodies."
+    },
+    "reasoning": {
+      "name": "Sequence & Reasoning",
+      "level": 2,
+      "accuracy_pct": 71,
+      "trend": "stable",
+      "hints_avg": 1.2,
+      "description": "Comfortable with step patterns (2, 4, 6) and daily logic with supportive reassurance."
+    }
+  },
+  "alerts": [
+    {
+      "id": "alt_1788774179",
+      "severity": "success",
+      "title": "Daily Wellness Session Completed 🎉",
+      "message": "Devendra completed 4 activities in 8 minutes with great cheerfulness.",
+      "timestamp": "Just now",
+      "action_taken": "Session recorded; next recommended activities scheduled for tomorrow."
+    },
+    {
+      "id": "alt_1",
+      "severity": "info",
+      "title": "Positive Memory Milestone",
+      "message": "Devendra recognized grandson Rohan in under 3.2 seconds without any hints today! ❤️",
+      "timestamp": "Today, 10:45 AM",
+      "action_taken": "Reinforced positive feedback & awarded recognition badge."
+    },
+    {
+      "id": "alt_2",
+      "severity": "gentle_care",
+      "title": "Gentle Practice Opportunity: Short-Term Recall",
+      "message": "Needed 2 supportive hints on the 4-object recall challenge yesterday. Consider reminiscing with family photo albums tonight.",
+      "timestamp": "Yesterday, 3:45 PM",
+      "action_taken": "Recommendation engine scheduled visual association support for today's session."
+    },
+    {
+      "id": "alt_3",
+      "severity": "success",
+      "title": "Routine Consistency",
+      "message": "Devendra has maintained a 5-day streak of morning routine checks and medication adherence.",
+      "timestamp": "2 days ago",
+      "action_taken": "Caregiver notification sent."
+    }
+  ],
+  "history_sessions": [
+    {
+      "session_id": "ses_1788774179",
+      "date": "2026-09-07",
+      "completed_activities": 4,
+      "duration_minutes": 8,
+      "encouragement": "Wonderful focus and warmth today! You completed all activities with a smile.",
+      "stars": 5,
+      "skills_practiced": [
+        "Recognition",
+        "Routine",
+        "Memory",
+        "Culture"
+      ],
+      "accuracy": 90
+    },
+    {
+      "session_id": "ses_01",
+      "date": "2026-09-03",
+      "completed_activities": 4,
+      "duration_minutes": 8,
+      "encouragement": "Wonderful engagement with family photos!",
+      "stars": 4,
+      "skills_practiced": [
+        "Recognition",
+        "Culture",
+        "Focus",
+        "Routine"
+      ],
+      "accuracy": 88
+    },
+    {
+      "session_id": "ses_02",
+      "date": "2026-09-04",
+      "completed_activities": 4,
+      "duration_minutes": 9,
+      "encouragement": "Great focus during morning sequence games.",
+      "stars": 4,
+      "skills_practiced": [
+        "Memory",
+        "Words",
+        "Routine",
+        "Recognition"
+      ],
+      "accuracy": 82
+    },
+    {
+      "session_id": "ses_03",
+      "date": "2026-09-05",
+      "completed_activities": 4,
+      "duration_minutes": 10,
+      "encouragement": "Excellent recall of festive traditions and foods.",
+      "stars": 5,
+      "skills_practiced": [
+        "Culture",
+        "Recognition",
+        "Match",
+        "Attention"
+      ],
+      "accuracy": 92
+    },
+    {
+      "session_id": "ses_04",
+      "date": "2026-09-06",
+      "completed_activities": 4,
+      "duration_minutes": 9,
+      "encouragement": "Consistent effort and gentle memory practice.",
+      "stars": 4,
+      "skills_practiced": [
+        "Memory",
+        "Reasoning",
+        "Routine",
+        "Recognition"
+      ],
+      "accuracy": 84
+    }
+  ],
+  "question_attempts_log": [
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 2300,
+      "timestamp": "2026-09-07T15:12:59.745674"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 8588,
+      "timestamp": "2026-09-07T15:16:24.625196"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 8874,
+      "timestamp": "2026-09-07T15:16:35.847918"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 3195,
+      "timestamp": "2026-09-07T15:17:33.492770"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 1,
+      "response_time_ms": 4412,
+      "timestamp": "2026-09-07T15:17:39.103017"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 9435,
+      "timestamp": "2026-09-07T15:42:40.402060"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 62345,
+      "timestamp": "2026-09-07T15:44:33.174411"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1297,
+      "timestamp": "2026-09-07T15:47:08.306750"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 772,
+      "timestamp": "2026-09-07T15:47:10.112025"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1005,
+      "timestamp": "2026-09-07T16:03:45.447671"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 955,
+      "timestamp": "2026-09-07T16:03:47.315175"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1187,
+      "timestamp": "2026-09-07T16:05:49.073000"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1242,
+      "timestamp": "2026-09-07T16:05:51.307355"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1152,
+      "timestamp": "2026-09-07T17:09:57.676115"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 994,
+      "timestamp": "2026-09-07T17:10:01.070802"
+    }
+  ]
+}

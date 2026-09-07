@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CogniCare Companion — Personalized Cognitive Wellness & Care</title>
+  
+  <!-- Google Fonts: Plus Jakarta Sans for ultra-clean readability -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['"Plus Jakarta Sans"', 'sans-serif'],
+            heading: ['"Outfit"', 'sans-serif'],
+          },
+          colors: {
+            peach: {
+              50: '#FFF7F2',
+              100: '#FEEFE6',
+              200: '#FEDCCD',
+              300: '#FDC4AE',
+              500: '#F9865B',
+              600: '#E26334',
+            },
+            sage: {
+              50: '#F3F8F5',
+              100: '#E4F0E8',
+              200: '#CCE2D3',
+              500: '#5A9B72',
+              600: '#437C58',
+              700: '#326043',
+            },
+            cream: {
+              50: '#FDFBF7',
+              100: '#F9F5EC',
+              200: '#F2EAD8',
+            },
+            skysoft: {
+              50: '#F1F7FC',
+              100: '#E2EEF8',
+              200: '#C8DEF2',
+              500: '#4A92D4',
+              600: '#3174B5',
+            },
+            lavender: {
+              50: '#F7F5FC',
+              100: '#EEEAF9',
+              200: '#DDD5F4',
+              500: '#8A6FD4',
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <!-- React 18, ReactDOM, Babel Standalone -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+
+  <!-- Canvas Confetti -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+
+  <!-- Chart.js for Caregiver Analytics -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+
+  <style>
+    body {
+      background-color: #FAF8F5;
+      color: #2D3748;
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      -webkit-tap-highlight-color: transparent;
+    }
+    
+    /* Font size scaling modes */
+    body.font-normal {
+      font-size: 16px;
+    }
+    body.font-large {
+      font-size: 18px;
+    }
+    body.font-xlarge {
+      font-size: 21px;
+    }
+
+    /* High contrast mode */
+    body.high-contrast {
+      background-color: #FFFFFF !important;
+      color: #000000 !important;
+    }
+    body.high-contrast .bg-white {
+      border: 2px solid #000000 !important;
+    }
+    body.high-contrast button {
+      border: 2px solid #000000 !important;
+      font-weight: 800 !important;
+    }
+
+    /* Custom smooth scrollbar */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #F2EAD8;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #D8CEBB;
+      border-radius: 4px;
+    }
+
+    .gentle-shadow {
+      box-shadow: 0 4px 20px -2px rgba(180, 160, 140, 0.12), 0 2px 6px -1px rgba(180, 160, 140, 0.08);
+    }
+    .gentle-shadow-hover:hover {
+      box-shadow: 0 8px 30px -4px rgba(180, 160, 140, 0.2), 0 4px 10px -2px rgba(180, 160, 140, 0.12);
+    }
+
+    /* Pulse animation for active target in focus game */
+    @keyframes gentle-pulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.05); }
+    }
+    .animate-gentle-pulse {
+      animation: gentle-pulse 2s infinite ease-in-out;
+    }
+  </style>
+</head>
+<body class="font-large min-h-screen">
+  <div id="root"></div>
+
+  <!-- Main React App Script -->
+  <script type="text/babel" src="app.jsx"></script>
+</body>
+</html>
+
