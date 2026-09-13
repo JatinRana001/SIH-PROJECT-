@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#F9865B">
+  <link rel="manifest" href="manifest.json">
   <title>SmritiSaathi — Personalized Cognitive Wellness & Care</title>
   
   <!-- Google Fonts: Plus Jakarta Sans for ultra-clean readability -->
@@ -75,6 +77,9 @@
 
   <!-- Chart.js for Caregiver Analytics -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/dexie@4.0.8/dist/dexie.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@4.22.0/dist/tf.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/mobilenet@2.1.1/dist/mobilenet.min.js"></script>
 
   <style>
     body {
@@ -143,5 +148,6 @@
 
   <!-- Main React App Script -->
   <script type="text/babel" src="app.jsx"></script>
+  <script>if ('serviceWorker' in navigator) navigator.serviceWorker.register('/service-worker.js').catch(() => {});</script>
 </body>
 </html>

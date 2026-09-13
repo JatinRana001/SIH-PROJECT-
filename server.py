@@ -67,6 +67,8 @@ DEFAULT_DATA = {
     "home_connections": [],
     "familiar_objects": [],
     "assistance_events": [],
+    "memory_graph_edges": [],
+    "audit_log": [],
     "family_members": [
         {
             "id": "fam_1",
@@ -383,7 +385,7 @@ def load_data():
             data = json.load(f)
             # Keep older demo data compatible without overwriting user content.
             changed = False
-            for key in ("home_locations", "home_connections", "familiar_objects", "assistance_events"):
+            for key in ("home_locations", "home_connections", "familiar_objects", "assistance_events", "memory_graph_edges", "audit_log"):
                 if key not in data:
                     data[key] = []
                     changed = True
@@ -440,12 +442,9 @@ def require_role(*roles):
     return decorator
 
 class ObjectRecognitionService:
-    """Conservative demo adapter. Replace this class when a real vision model is available."""
+    """Logging-only adapter: all recognition is performed honestly in the browser."""
     def recognize(self, image, expected_object_id=None, objects=None):
-        if expected_object_id:
-            familiar = next((item for item in (objects or []) if item.get("id") == expected_object_id), None)
-            if familiar:
-                return {"name": familiar.get("name"), "confidence": 1.0, "familiar_object_id": familiar["id"]}
+        # Do not trust a client-side expected id or claim a result without vision evidence.
         return {"name": "uncertain", "confidence": 0.0, "familiar_object_id": None}
 
 GAME_IDS = {
@@ -678,6 +677,12 @@ def generate_questions_for_game(game_id, data, current_level=2):
 
     elif game_id == "game_routine":
         # Game 4: Daily Routine Puzzle
+        linked_object = next((obj for obj in data.get('familiar_objects', []) if obj.get('routine_id')), None)
+        linked_routine = next((r for r in routines if r.get('id') == linked_object.get('routine_id')), {}) if linked_object else {}
+        if linked_object:
+            object_name = linked_object.get('familiar_name') or linked_object.get('name')
+            routine_name = linked_routine.get('title') or linked_routine.get('name') or 'this familiar routine'
+            return [{"id": "grp_personal_object", "game_type": "semantic", "title": f"Which object do you use during {routine_name}?", "subtitle": "Choose the familiar item.", "options": [object_name, "A garden tool", "A travel ticket", "A rain umbrella"], "correct_answer": object_name, "hints": ["Think of the familiar item connected with this routine.", f"It is {object_name}.", f"Choose {object_name}."], "explanation": f"Yes, {object_name} is connected with {routine_name}.", "audio_text": f"Which object do you use during {routine_name}?"}]
         return [
             {
                 "id": "grp_q1",
@@ -1421,6 +1426,21 @@ def caregiver_analytics():
 def assistance_item(data, collection, item_id):
     return next((item for item in data.get(collection, []) if item.get("id") == item_id), None)
 
+def audit(data, action, item_type, item_id):
+    data.setdefault('audit_log', []).append({'id': f'audit_{int(time.time()*1000)}', 'action': action, 'item_type': item_type, 'item_id': item_id, 'timestamp': datetime.now().isoformat()})
+
+@app.route('/api/memory-graph/<node_type>/<node_id>', methods=['GET'])
+@require_role('patient', 'caregiver')
+@data_locked
+def memory_graph(node_type, node_id):
+    data = load_data()
+    edges = list(data.get('memory_graph_edges', []))
+    for obj in data.get('familiar_objects', []):
+        for target_type, field, relation in [('place', 'room_id', 'kept_in'), ('person', 'person_id', 'connected_to'), ('routine', 'routine_id', 'used_during')]:
+            if obj.get(field): edges.append({'id': f"derived_{obj['id']}_{field}", 'from_type': 'object', 'from_id': obj['id'], 'to_type': target_type, 'to_id': obj[field], 'relationship': relation})
+    connected = [edge for edge in edges if (edge.get('from_type') == node_type and edge.get('from_id') == node_id) or (edge.get('to_type') == node_type and edge.get('to_id') == node_id)]
+    return jsonify({'node': {'type': node_type, 'id': node_id}, 'edges': connected})
+
 @app.route('/api/home/locations', methods=['GET', 'POST'])
 @require_role('patient', 'caregiver')
 @data_locked
@@ -1430,8 +1450,10 @@ def home_locations():
     if request.auth['role'] != 'caregiver': return jsonify({'error': 'You do not have permission for this action'}), 403
     payload = request.get_json(silent=True) or {}
     now = datetime.now().isoformat()
-    location = {"id": f"loc_{int(time.time() * 1000)}", "patient_id": data['patient']['id'], "name": payload.get('name', 'Room'), "familiar_name": payload.get('familiar_name', payload.get('name', 'Room')), "type": payload.get('type', 'other'), "photo": payload.get('photo'), "description": payload.get('description', ''), "voice_description": payload.get('voice_description', ''), "is_active": payload.get('is_active', True), "created_at": now, "updated_at": now}
-    data['home_locations'].append(location); save_data(data)
+    existing = assistance_item(data, 'home_locations', payload.get('id')) if payload.get('id') else None
+    if existing: return jsonify({'success': True, 'location': existing})
+    location = {"id": payload.get('id', f"loc_{int(time.time() * 1000)}"), "patient_id": data['patient']['id'], "name": payload.get('name', 'Room'), "familiar_name": payload.get('familiar_name', payload.get('name', 'Room')), "type": payload.get('type', 'other'), "photo": payload.get('photo'), "reference_images": payload.get('reference_images', []), "description": payload.get('description', ''), "voice_description": payload.get('voice_description', ''), "is_active": payload.get('is_active', True), "created_at": now, "updated_at": now}
+    data['home_locations'].append(location); audit(data, 'create', 'location', location['id']); save_data(data)
     return jsonify({'success': True, 'location': location})
 
 @app.route('/api/home/locations/<location_id>', methods=['PUT', 'DELETE'])
@@ -1443,8 +1465,8 @@ def home_location_detail(location_id):
     if request.method == 'DELETE':
         data['home_locations'] = [x for x in data['home_locations'] if x['id'] != location_id]
         data['home_connections'] = [x for x in data['home_connections'] if location_id not in (x['from_location_id'], x['to_location_id'])]
-        save_data(data); return jsonify({'success': True, 'deleted_id': location_id})
-    location.update(request.get_json(silent=True) or {}); location['updated_at'] = datetime.now().isoformat(); save_data(data)
+        audit(data, 'delete', 'location', location_id); save_data(data); return jsonify({'success': True, 'deleted_id': location_id})
+    location.update(request.get_json(silent=True) or {}); location['updated_at'] = datetime.now().isoformat(); audit(data, 'edit', 'location', location_id); save_data(data)
     return jsonify({'success': True, 'location': location})
 
 @app.route('/api/home/connections', methods=['GET', 'POST'])
@@ -1456,7 +1478,9 @@ def home_connections():
     if request.auth['role'] != 'caregiver': return jsonify({'error': 'You do not have permission for this action'}), 403
     p = request.get_json(silent=True) or {}
     if not assistance_item(data, 'home_locations', p.get('from_location_id')) or not assistance_item(data, 'home_locations', p.get('to_location_id')): return jsonify({'error': 'Both locations must exist'}), 400
-    connection = {"id": f"conn_{int(time.time() * 1000)}", "patient_id": data['patient']['id'], "from_location_id": p['from_location_id'], "to_location_id": p['to_location_id'], "instruction": p.get('instruction', ''), "voice_instruction": p.get('voice_instruction', ''), "distance_estimate": p.get('distance_estimate'), "created_at": datetime.now().isoformat()}
+    existing = assistance_item(data, 'home_connections', p.get('id')) if p.get('id') else None
+    if existing: return jsonify({'success': True, 'connection': existing})
+    connection = {"id": p.get('id', f"conn_{int(time.time() * 1000)}"), "patient_id": data['patient']['id'], "from_location_id": p['from_location_id'], "to_location_id": p['to_location_id'], "instruction": p.get('instruction', ''), "voice_instruction": p.get('voice_instruction', ''), "direction": p.get('direction', ''), "distance_estimate": p.get('distance_estimate'), "created_at": datetime.now().isoformat()}
     data['home_connections'].append(connection); save_data(data); return jsonify({'success': True, 'connection': connection})
 
 @app.route('/api/home/connections/<connection_id>', methods=['PUT', 'DELETE'])
@@ -1496,8 +1520,10 @@ def familiar_objects():
     data = load_data()
     if request.method == 'GET': return jsonify(data.get('familiar_objects', []))
     if request.auth['role'] != 'caregiver': return jsonify({'error': 'You do not have permission for this action'}), 403
-    p = request.get_json(silent=True) or {}; item = {"id": f"obj_{int(time.time() * 1000)}", "patient_id": data['patient']['id'], "name": p.get('name', 'Familiar object'), "familiar_name": p.get('familiar_name', p.get('name', 'Familiar object')), "image": p.get('image'), "everyday_use": p.get('everyday_use', ''), "room_id": p.get('room_id'), "person_id": p.get('person_id'), "routine_id": p.get('routine_id'), "voice_explanation": p.get('voice_explanation', ''), "created_at": datetime.now().isoformat()}
-    data['familiar_objects'].append(item); save_data(data); return jsonify({'success': True, 'object': item})
+    p = request.get_json(silent=True) or {}; existing = assistance_item(data, 'familiar_objects', p.get('id')) if p.get('id') else None
+    if existing: return jsonify({'success': True, 'object': existing})
+    item = {"id": p.get('id', f"obj_{int(time.time() * 1000)}"), "patient_id": data['patient']['id'], "name": p.get('name', 'Familiar object'), "familiar_name": p.get('familiar_name', p.get('name', 'Familiar object')), "image": p.get('image'), "everyday_use": p.get('everyday_use', ''), "room_id": p.get('room_id'), "person_id": p.get('person_id'), "routine_id": p.get('routine_id'), "voice_explanation": p.get('voice_explanation', ''), "created_at": datetime.now().isoformat()}
+    data['familiar_objects'].append(item); audit(data, 'create', 'object', item['id']); save_data(data); return jsonify({'success': True, 'object': item})
 
 @app.route('/api/objects/<object_id>', methods=['PUT', 'DELETE'])
 @require_role('caregiver')
@@ -1505,8 +1531,8 @@ def familiar_objects():
 def familiar_object_detail(object_id):
     data = load_data(); item = assistance_item(data, 'familiar_objects', object_id)
     if not item: return jsonify({'error': 'Object not found'}), 404
-    if request.method == 'DELETE': data['familiar_objects'] = [x for x in data['familiar_objects'] if x['id'] != object_id]; save_data(data); return jsonify({'success': True, 'deleted_id': object_id})
-    item.update(request.get_json(silent=True) or {}); save_data(data); return jsonify({'success': True, 'object': item})
+    if request.method == 'DELETE': data['familiar_objects'] = [x for x in data['familiar_objects'] if x['id'] != object_id]; audit(data, 'delete', 'object', object_id); save_data(data); return jsonify({'success': True, 'deleted_id': object_id})
+    item.update(request.get_json(silent=True) or {}); audit(data, 'edit', 'object', object_id); save_data(data); return jsonify({'success': True, 'object': item})
 
 @app.route('/api/object-recognition', methods=['POST'])
 @require_role('patient', 'caregiver')
