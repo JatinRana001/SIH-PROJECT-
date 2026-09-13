@@ -1,5 +1,49 @@
 const { useState, useEffect, useRef } = React;
 
+const TOKEN_KEY = 'smritisaathi_token';
+const ROLE_KEY = 'smritisaathi_role';
+const ASSISTANCE_QUEUE_KEY = 'smritisaathi_assistance_queue';
+async function apiFetch(url, options = {}) {
+  const headers = { ...(options.headers || {}) };
+  const token = localStorage.getItem(TOKEN_KEY);
+  if (token) headers.Authorization = `Bearer ${token}`;
+  const response = await fetch(url, { ...options, headers });
+  if (response.ok && url !== '/api/assistance/events') flushAssistanceQueue();
+  return response;
+}
+// Deliberate localStorage placeholder until a future IndexedDB + Service Worker upgrade.
+async function fetchWithCache(url, cacheKey) {
+  try {
+    const response = await apiFetch(url);
+    if (!response.ok) throw new Error(`Unable to load ${url}`);
+    const data = await response.json();
+    localStorage.setItem(cacheKey, JSON.stringify(data));
+    return data;
+  } catch (_) {
+    try { return JSON.parse(localStorage.getItem(cacheKey) || '[]'); }
+    catch (_) { return []; }
+  }
+}
+// Deliberate lightweight placeholder; move this to IndexedDB + Service Worker + Background Sync later.
+async function logAssistanceEvent(event) {
+  const queued = JSON.parse(localStorage.getItem(ASSISTANCE_QUEUE_KEY) || '[]');
+  try {
+    const res = await apiFetch('/api/assistance/events', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(event) });
+    if (!res.ok) throw new Error('Event could not be saved');
+  } catch (_) {
+    if (!queued.some(x => x.id === event.id)) localStorage.setItem(ASSISTANCE_QUEUE_KEY, JSON.stringify([...queued, event]));
+  }
+}
+async function flushAssistanceQueue() {
+  const queued = JSON.parse(localStorage.getItem(ASSISTANCE_QUEUE_KEY) || '[]');
+  for (const event of queued) {
+    try { const res = await fetch('/api/assistance/events', { method: 'POST', headers: {'Content-Type': 'application/json', Authorization: `Bearer ${localStorage.getItem(TOKEN_KEY)}`}, body: JSON.stringify(event) }); if (!res.ok) return; }
+    catch (_) { return; }
+  }
+  localStorage.removeItem(ASSISTANCE_QUEUE_KEY);
+}
+window.addEventListener('online', flushAssistanceQueue);
+
 // ==========================================
 // VOICE PACK DEFINITIONS & REGIONAL METADATA
 // ==========================================
@@ -911,8 +955,9 @@ function VoicePackModal({ isOpen, onClose, currentVoice, onSelectVoice, speed, o
 // MAIN APP COMPONENT
 // ==========================================
 function CogniCareApp() {
-  const [role, setRole] = useState('patient'); // 'patient' | 'caregiver'
+  const [role, setRole] = useState(() => localStorage.getItem(ROLE_KEY) || 'patient');
   const [view, setView] = useState(() => {
+    if (!localStorage.getItem(TOKEN_KEY)) return 'login';
     const match = window.location.hash.match(/^#game\/(game_[a-z]+)$/);
     return match ? `game:${match[1]}` : 'dashboard';
   });
@@ -975,13 +1020,13 @@ function CogniCareApp() {
     try {
       setLoading(true);
       const [patRes, famRes, routRes, remRes, sesRes, careRes, anaRes] = await Promise.all([
-        fetch('/api/patient').then(r => r.json()),
-        fetch('/api/family').then(r => r.json()),
-        fetch('/api/routines').then(r => r.json()),
-        fetch('/api/reminders').then(r => r.json()),
-        fetch('/api/games/today-session').then(r => r.json()),
-        fetch('/api/caregiver/overview').then(r => r.json()),
-        fetch('/api/caregiver/analytics').then(r => r.json())
+        apiFetch('/api/patient').then(r => r.json()),
+        apiFetch('/api/family').then(r => r.json()),
+        apiFetch('/api/routines').then(r => r.json()),
+        apiFetch('/api/reminders').then(r => r.json()),
+        apiFetch('/api/games/today-session').then(r => r.json()),
+        role === 'caregiver' ? apiFetch('/api/caregiver/overview').then(r => r.json()) : Promise.resolve({}),
+        role === 'caregiver' ? apiFetch('/api/caregiver/analytics').then(r => r.json()) : Promise.resolve({})
       ]);
 
       setPatient(patRes.patient);
@@ -1016,8 +1061,16 @@ function CogniCareApp() {
   };
 
   useEffect(() => {
-    fetchAllData();
-  }, []);
+    if (view !== 'login') fetchAllData();
+  }, [role, view === 'login']);
+
+  const handleLogin = ({ token, role: nextRole }) => {
+    localStorage.setItem(TOKEN_KEY, token); localStorage.setItem(ROLE_KEY, nextRole);
+    setRole(nextRole); setView('dashboard');
+  };
+  const logout = () => { localStorage.removeItem(TOKEN_KEY); localStorage.removeItem(ROLE_KEY); voiceService.stop(); setView('login'); };
+
+  if (view === 'login') return <LoginView onLogin={handleLogin} />;
 
   // Update Settings in Backend and State
   const savePatientSettings = async (updates) => {
@@ -1032,7 +1085,7 @@ function CogniCareApp() {
       if (updates.voice_enabled !== undefined) setVoiceGuidance(updates.voice_enabled);
     };
     try {
-      const response = await fetch('/api/patient/settings', {
+      const response = await apiFetch('/api/patient/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(updates)
@@ -1161,6 +1214,7 @@ function CogniCareApp() {
               <span>{role === 'patient' ? 'Caregiver Portal' : 'Patient View'}</span>
             </button>
 
+            <button onClick={logout} className="px-3 py-2 rounded-xl text-sm font-semibold bg-stone-50 text-stone-600 border border-stone-200">Log out</button>
           </div>
         </div>
       </header>
@@ -1311,6 +1365,8 @@ function PatientNavBar({ view, setView, streak, t }) {
 // ==========================================
 function CaregiverNavBar({ view, setView, alertsCount }) {
   const tabs = [
+    { id: 'home_mgr', label: 'Home Assistance', icon: 'Home' },
+    { id: 'objects_mgr', label: 'Familiar Objects', icon: 'Objects' },
     { id: 'dashboard', label: 'Caregiver Overview', icon: '📊' },
     { id: 'analytics', label: 'Skill Analytics', icon: '📈' },
     { id: 'voice_settings', label: 'Language & Voice', icon: '🔊' },
@@ -1477,6 +1533,9 @@ function PatientExperience({
       />
     );
   }
+  if (view === 'where_am_i') return <WhereAmIView setView={setView} voiceLanguage={voiceLanguage} speechSpeed={speechSpeed} />;
+  if (view === 'take_me_there') return <TakeMeThereView setView={setView} voiceLanguage={voiceLanguage} speechSpeed={speechSpeed} />;
+  if (view === 'what_is_this') return <WhatIsThisView setView={setView} voiceLanguage={voiceLanguage} speechSpeed={speechSpeed} />;
 
   if (view === 'profile') {
     return (
@@ -1637,6 +1696,11 @@ function PatientDashboardView({
         </div>
       </div>
 
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <button onClick={() => setView('where_am_i')} className="p-5 rounded-2xl bg-skysoft-50 border border-skysoft-200 text-stone-800 font-bold text-lg">📍 WHERE AM I?</button>
+        <button onClick={() => setView('take_me_there')} className="p-5 rounded-2xl bg-sage-50 border border-sage-200 text-stone-800 font-bold text-lg">🏠 TAKE ME THERE</button>
+        <button onClick={() => setView('what_is_this')} className="p-5 rounded-2xl bg-peach-50 border border-peach-200 text-stone-800 font-bold text-lg">📷 WHAT IS THIS?</button>
+      </div>
       {/* Encouragement & Routine Adherence Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
         <div className="bg-white rounded-2xl p-5 border border-cream-200 gentle-shadow flex items-start gap-4">
@@ -1748,7 +1812,7 @@ function PatientDashboardView({
                       onClick={async () => {
                         if (soundEffects) sounds.playChime('tap');
                         try {
-                          const res = await fetch(`/api/reminders/${rem.id}/toggle`, { method: 'POST' });
+                          const res = await apiFetch(`/api/reminders/${rem.id}/toggle`, { method: 'POST' });
                           const json = await res.json();
                           if (json.success) {
                             setReminders(reminders.map(r => r.id === rem.id ? json.reminder : r));
@@ -1855,7 +1919,7 @@ function StandaloneGameFlow({ gameId, patient, setView, soundEffects, triggerCon
 
   useEffect(() => {
     let cancelled = false;
-    fetch(`/api/games/${encodeURIComponent(gameId)}`)
+    apiFetch(`/api/games/${encodeURIComponent(gameId)}`)
       .then(response => response.ok ? response.json() : Promise.reject(new Error('Game not found')))
       .then(data => !cancelled && setGame(data))
       .catch(() => !cancelled && setError('This game could not be loaded. Please return to the games page and try again.'));
@@ -1987,7 +2051,7 @@ function TodaySessionFlow({
     if (correct) {
       if (soundEffects) sounds.playChime('success');
       try {
-        await fetch('/api/sessions/record-attempt', {
+        await apiFetch('/api/sessions/record-attempt', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2028,7 +2092,7 @@ function TodaySessionFlow({
       setCurrentQuestionIndex(q => q + 1);
     } else if (currentActivityIndex < activities.length - 1) {
       if (sessionMode) {
-        const response = await fetch('/api/games/today-session/progress', {
+        const response = await apiFetch('/api/games/today-session/progress', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ session_id: todaySession.session_id, game_id: currentActivity.game_id })
         });
@@ -2052,12 +2116,12 @@ function TodaySessionFlow({
 
       try {
         if (!sessionMode) return;
-        const progress = await fetch('/api/games/today-session/progress', {
+        const progress = await apiFetch('/api/games/today-session/progress', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ session_id: todaySession.session_id, game_id: currentActivity.game_id })
         });
         if (!progress.ok) throw new Error('Could not save game progress');
-        await fetch('/api/sessions/complete', {
+        await apiFetch('/api/sessions/complete', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -2663,7 +2727,7 @@ function DailyCheckInView({
                 onClick={async () => {
                   voiceService.stop();
                   try {
-                    await fetch('/api/checkin', { method: 'POST' });
+                    await apiFetch('/api/checkin', { method: 'POST' });
                     onDataRefresh();
                   } catch (e) {
                     console.error(e);
@@ -2855,7 +2919,7 @@ function PatientRoutineView({ routines, patient, soundEffects, voiceGuidance, on
                     onClick={async () => {
                       if (soundEffects) sounds.playChime('tap');
                       try {
-                        await fetch(`/api/routines/${rt.id}/step/${step.id}/toggle`, { method: 'POST' });
+                          await apiFetch(`/api/routines/${rt.id}/step/${step.id}/toggle`, { method: 'POST' });
                         onDataRefresh();
                       } catch (e) {
                         console.error(e);
@@ -2893,7 +2957,7 @@ function PatientRemindersView({ reminders, setReminders, soundEffects, voiceGuid
   const toggleReminder = async (id) => {
     if (soundEffects) sounds.playChime('tap');
     try {
-      const res = await fetch(`/api/reminders/${id}/toggle`, { method: 'POST' });
+      const res = await apiFetch(`/api/reminders/${id}/toggle`, { method: 'POST' });
       const json = await res.json();
       if (json.success) {
         setReminders(reminders.map(r => r.id === id ? json.reminder : r));
@@ -3224,7 +3288,7 @@ function PatientOnboardingModal({ patient, onComplete, voiceLanguage, setVoiceLa
 
   const handleFinish = async () => {
     try {
-      await fetch('/api/onboarding/complete', {
+      await apiFetch('/api/onboarding/complete', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -3522,6 +3586,8 @@ function CaregiverExperience({
   if (view === 'alerts') {
     return <CaregiverAlertsView alerts={alerts} />;
   }
+  if (view === 'home_mgr') return <HomeManager />;
+  if (view === 'objects_mgr') return <ObjectsManager />;
 
   // Default: Caregiver Overview
   return (
@@ -3860,6 +3926,7 @@ function CaregiverAnalyticsView({ analyticsData, skillProfile }) {
   const accuracyCanvasRef = useRef(null);
   const chartInstance1 = useRef(null);
   const chartInstance2 = useRef(null);
+  const house = analyticsData?.house_assistance || { today: {}, most_requested: { locations: [], objects: [] } };
 
   useEffect(() => {
     if (!analyticsData || !window.Chart) return;
@@ -3979,6 +4046,23 @@ function CaregiverAnalyticsView({ analyticsData, skillProfile }) {
           <p className="text-xs text-stone-500 mt-2 font-medium">5 of 5 daily sessions completed</p>
         </div>
       </div>
+
+      <div className="bg-white rounded-3xl p-6 border border-cream-200 gentle-shadow space-y-5">
+        <div>
+          <h3 className="font-heading font-bold text-lg text-stone-800">House Assistance</h3>
+          <p className="text-sm text-stone-500">A gentle view of how familiar home supports were used today.</p>
+        </div>
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+          <div className="p-4 rounded-2xl bg-skysoft-50 border border-skysoft-200"><span className="text-sm text-stone-600">📍 Where Am I?</span><strong className="block text-2xl text-stone-800 mt-1">{house.today.WHERE_AM_I_USED || 0}</strong></div>
+          <div className="p-4 rounded-2xl bg-sage-50 border border-sage-200"><span className="text-sm text-stone-600">🏠 Route Guidance</span><strong className="block text-2xl text-stone-800 mt-1">{house.today.ROUTE_REQUESTED || 0}</strong></div>
+          <div className="p-4 rounded-2xl bg-peach-50 border border-peach-200"><span className="text-sm text-stone-600">📷 Object Help</span><strong className="block text-2xl text-stone-800 mt-1">{house.today.OBJECT_RECOGNITION_USED || (house.today.OBJECT_RECOGNITION_SUCCESS || 0) + (house.today.OBJECT_RECOGNITION_UNCERTAIN || 0)}</strong></div>
+          <div className="p-4 rounded-2xl bg-amber-50 border border-amber-200"><span className="text-sm text-stone-600">👤 Caregiver Help</span><strong className="block text-2xl text-stone-800 mt-1">{house.today.CAREGIVER_ASSISTANCE_REQUESTED || 0}</strong></div>
+        </div>
+        <div className="grid sm:grid-cols-2 gap-5 text-sm">
+          <div><h4 className="font-semibold text-stone-800 mb-2">Most requested locations</h4>{house.most_requested.locations.length ? house.most_requested.locations.map(item => <p key={item.id} className="text-stone-600 py-1">{item.name} <span className="text-stone-400">· {item.count} use{item.count === 1 ? '' : 's'}</span></p>) : <p className="text-stone-500">No location requests recorded today.</p>}</div>
+          <div><h4 className="font-semibold text-stone-800 mb-2">Most requested objects</h4>{house.most_requested.objects.length ? house.most_requested.objects.map(item => <p key={item.id} className="text-stone-600 py-1">{item.name} <span className="text-stone-400">· {item.count} use{item.count === 1 ? '' : 's'}</span></p>) : <p className="text-stone-500">No object requests recorded today.</p>}</div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -3998,7 +4082,7 @@ function CaregiverFamilyManager({ familyMembers, setFamilyMembers, soundEffects 
     e.preventDefault();
     if (!name) return;
     try {
-      const res = await fetch('/api/family', {
+      const res = await apiFetch('/api/family', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -4027,7 +4111,7 @@ function CaregiverFamilyManager({ familyMembers, setFamilyMembers, soundEffects 
   const handleDelete = async (id) => {
     if (!confirm("Are you sure you want to remove this family member?")) return;
     try {
-      await fetch(`/api/family/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/family/${id}`, { method: 'DELETE' });
       setFamilyMembers(familyMembers.filter(m => m.id !== id));
       if (soundEffects) sounds.playChime('tap');
     } catch (err) {
@@ -4224,7 +4308,7 @@ function CaregiverReminderManager({ reminders, setReminders, soundEffects }) {
     e.preventDefault();
     if (!title) return;
     try {
-      const res = await fetch('/api/reminders', {
+      const res = await apiFetch('/api/reminders', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -4250,7 +4334,7 @@ function CaregiverReminderManager({ reminders, setReminders, soundEffects }) {
 
   const handleDelete = async (id) => {
     try {
-      await fetch(`/api/reminders/${id}`, { method: 'DELETE' });
+      await apiFetch(`/api/reminders/${id}`, { method: 'DELETE' });
       setReminders(reminders.filter(r => r.id !== id));
     } catch (err) {
       console.error(err);
@@ -4384,7 +4468,7 @@ function CaregiverCultureManager({ culturalPref, onDataRefresh, soundEffects }) 
 
   const handleSave = async () => {
     try {
-      await fetch('/api/culture', {
+      await apiFetch('/api/culture', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ region })
@@ -4477,6 +4561,44 @@ function CaregiverAlertsView({ alerts }) {
       </div>
     </div>
   );
+}
+
+function WhereAmIView({setView,voiceLanguage,speechSpeed}) { const [rooms,setRooms]=useState([]),[room,setRoom]=useState(null); useEffect(()=>{fetchWithCache('/api/home/locations', 'smritisaathi_cache_locations').then(setRooms)},[]); const choose=x=>{setRoom(x);localStorage.setItem('smritisaathi_current_location',x.id);logAssistanceEvent({id:`evt_${Date.now()}`,event_type:'WHERE_AM_I_USED',location_id:x.id});}; return <div className="max-w-2xl mx-auto bg-white rounded-3xl p-8 text-center space-y-5">{room ? <><div className="text-6xl">📍</div><h2 className="font-heading font-bold text-3xl">{room.familiar_name || room.name}</h2><p className="text-stone-600">{room.description || `You are in the ${room.name}.`}</p><SpeakerButton text={room.voice_description || room.description || `You are in ${room.familiar_name || room.name}.`} lang={voiceLanguage} speed={speechSpeed}/><button onClick={()=>setView('dashboard')} className="block mx-auto px-8 py-3 rounded-2xl bg-peach-500 text-white font-semibold">OK</button></> : <><h2 className="font-heading font-bold text-2xl">Where am I?</h2><p className="text-stone-500">Please choose the room you are in.</p><div className="grid grid-cols-2 gap-3">{rooms.filter(x=>x.is_active).map(x=><button onClick={()=>choose(x)} className="p-5 rounded-2xl bg-cream-50 border font-semibold">📍 {x.familiar_name || x.name}</button>)}</div></>}</div>; }
+function TakeMeThereView({setView,voiceLanguage,speechSpeed}) { const [rooms,setRooms]=useState([]),[route,setRoute]=useState(null),[message,setMessage]=useState(''); useEffect(()=>fetchWithCache('/api/home/locations', 'smritisaathi_cache_locations').then(setRooms),[]); const go=async to=>{const from=localStorage.getItem('smritisaathi_current_location'); if(!from){setMessage('Please use Where am I? first.');return;} const r=await apiFetch(`/api/home/route?from=${from}&to=${to.id}`);const j=await r.json();logAssistanceEvent({id:`evt_${Date.now()}`,event_type:'ROUTE_REQUESTED',location_id:to.id,success:j.found});if(j.found)setRoute(j.route);else setMessage(j.message);}; return <div className="max-w-2xl mx-auto bg-white rounded-3xl p-8 space-y-5">{route?<><h2 className="font-heading font-bold text-2xl">Take me there</h2>{route.map((x,i)=><div className="p-4 rounded-2xl bg-cream-50"><b>{i+1}. {x.familiar_name||x.name}</b><p>{x.instruction}</p><SpeakerButton text={x.instruction||x.name} lang={voiceLanguage} speed={speechSpeed}/></div>)}<button onClick={()=>{logAssistanceEvent({id:`evt_${Date.now()}`,event_type:'ROUTE_COMPLETED'});setView('dashboard')}} className="px-6 py-3 rounded-2xl bg-peach-500 text-white">DONE</button></>:<><h2 className="font-heading font-bold text-2xl">Where would you like to go?</h2>{message&&<p className="p-3 bg-amber-50 rounded-xl">{message} Ask your caregiver for help.</p>}<div className="grid grid-cols-2 gap-3">{rooms.map(x=><button onClick={()=>go(x)} className="p-4 rounded-2xl border bg-cream-50">🏠 {x.familiar_name||x.name}</button>)}</div></>}</div>; }
+function WhatIsThisView({setView,voiceLanguage,speechSpeed}) { const [result,setResult]=useState(null); const recognize=async e=>{const f=e.target.files[0];if(!f)return;const image=await new Promise(ok=>{const r=new FileReader();r.onload=()=>ok(r.result);r.readAsDataURL(f)});const j=await (await apiFetch('/api/object-recognition',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image})})).json();setResult(j);logAssistanceEvent({id:`evt_${Date.now()}`,event_type:j.familiar_object_id?'OBJECT_RECOGNITION_SUCCESS':'OBJECT_RECOGNITION_UNCERTAIN',object_id:j.familiar_object_id,success:!!j.familiar_object_id});}; return <div className="max-w-xl mx-auto bg-white rounded-3xl p-8 text-center space-y-5"><h2 className="font-heading font-bold text-2xl">What is this?</h2>{!result?<input type="file" accept="image/*" capture="environment" onChange={recognize} className="w-full p-4 rounded-xl border"/>:result.familiar_object_id?<><h3 className="text-xl font-bold">{result.name}</h3><SpeakerButton text={result.name} lang={voiceLanguage} speed={speechSpeed}/><button onClick={()=>setView('dashboard')} className="px-6 py-3 rounded-2xl bg-peach-500 text-white">DONE</button></>:<><p className="text-stone-600">I'm not sure about this object. Please try another photo.</p><button onClick={()=>setResult(null)} className="px-5 py-3 rounded-xl bg-peach-500 text-white">TRY AGAIN</button><button onClick={()=>setView('dashboard')} className="ml-2 px-5 py-3 rounded-xl border">ASK CAREGIVER</button></>}</div>; }
+
+function HomeManager() {
+  const [locations, setLocations] = useState([]), [connections, setConnections] = useState([]), [name, setName] = useState(''), [familiar, setFamiliar] = useState(''), [from, setFrom] = useState(''), [to, setTo] = useState(''), [instruction, setInstruction] = useState('');
+  const load = async () => { const [locations, connections] = await Promise.all([fetchWithCache('/api/home/locations', 'smritisaathi_cache_locations'), fetchWithCache('/api/home/connections', 'smritisaathi_cache_connections')]); setLocations(locations); setConnections(connections); };
+  useEffect(() => { load(); }, []);
+  const addLocation = async e => { e.preventDefault(); await apiFetch('/api/home/locations',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,familiar_name:familiar || name})}); setName('');setFamiliar('');load(); };
+  const addConnection = async e => { e.preventDefault(); await apiFetch('/api/home/connections',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({from_location_id:from,to_location_id:to,instruction})}); setInstruction('');load(); };
+  return <div className="space-y-6 animate-fadeIn"><div><h2 className="font-heading font-bold text-2xl text-stone-800">Home Assistance</h2><p className="text-sm text-stone-500">Add familiar rooms and the real paths between them.</p></div><div className="grid lg:grid-cols-2 gap-6"><form onSubmit={addLocation} className="bg-white rounded-3xl p-6 border border-cream-200 space-y-3"><h3 className="font-bold">Add Location</h3><input required value={name} onChange={e=>setName(e.target.value)} placeholder="Room name" className="w-full p-3 rounded-xl border"/><input value={familiar} onChange={e=>setFamiliar(e.target.value)} placeholder="Familiar name (optional)" className="w-full p-3 rounded-xl border"/><button className="px-4 py-2 rounded-xl bg-sage-600 text-white">Add location</button></form><form onSubmit={addConnection} className="bg-white rounded-3xl p-6 border border-cream-200 space-y-3"><h3 className="font-bold">Connect Locations</h3><select required value={from} onChange={e=>setFrom(e.target.value)} className="w-full p-3 rounded-xl border"><option value="">From…</option>{locations.map(x=><option value={x.id}>{x.name}</option>)}</select><select required value={to} onChange={e=>setTo(e.target.value)} className="w-full p-3 rounded-xl border"><option value="">To…</option>{locations.map(x=><option value={x.id}>{x.name}</option>)}</select><input required value={instruction} onChange={e=>setInstruction(e.target.value)} placeholder="Walk straight to the kitchen." className="w-full p-3 rounded-xl border"/><button className="px-4 py-2 rounded-xl bg-sage-600 text-white">Connect</button></form></div><div className="bg-white rounded-3xl p-6 border border-cream-200"><h3 className="font-bold mb-3">Home map preview</h3><div className="flex flex-wrap gap-3">{locations.map(x=><div className="p-4 rounded-2xl bg-cream-50 border">🏠 <b>{x.name}</b><div className="text-xs text-stone-500">{x.familiar_name}</div></div>)}</div><p className="text-xs text-stone-500 mt-4">{connections.length} configured connection(s)</p></div></div>;
+}
+function ObjectsManager() {
+  const [objects,setObjects]=useState([]),[locations,setLocations]=useState([]),[name,setName]=useState(''),[use,setUse]=useState(''),[room,setRoom]=useState('');
+  const load=async()=>{const[objects,locations]=await Promise.all([fetchWithCache('/api/objects', 'smritisaathi_cache_objects'),fetchWithCache('/api/home/locations', 'smritisaathi_cache_locations')]);setObjects(objects);setLocations(locations);}; useEffect(()=>{load()},[]);
+  const add=async e=>{e.preventDefault();await apiFetch('/api/objects',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,everyday_use:use,room_id:room})});setName('');setUse('');load();};
+  return <div className="space-y-6 animate-fadeIn"><div><h2 className="font-heading font-bold text-2xl text-stone-800">Familiar Objects</h2><p className="text-sm text-stone-500">Personal items can be linked to their familiar room.</p></div><form onSubmit={add} className="bg-white rounded-3xl p-6 border border-cream-200 grid sm:grid-cols-4 gap-3"><input required value={name} onChange={e=>setName(e.target.value)} placeholder="Object name" className="p-3 rounded-xl border"/><input value={use} onChange={e=>setUse(e.target.value)} placeholder="Everyday use" className="p-3 rounded-xl border"/><select value={room} onChange={e=>setRoom(e.target.value)} className="p-3 rounded-xl border"><option value="">Room (optional)</option>{locations.map(x=><option value={x.id}>{x.name}</option>)}</select><button className="rounded-xl bg-sage-600 text-white font-semibold">Add object</button></form><div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">{objects.map(x=><div className="bg-white rounded-2xl p-5 border border-cream-200"><h3 className="font-bold">📷 {x.name}</h3><p className="text-sm text-stone-500 mt-1">{x.everyday_use}</p></div>)}</div></div>;
+}
+
+function LoginView({ onLogin }) {
+  const [caregiver, setCaregiver] = useState(false);
+  const [email, setEmail] = useState('ananya.sharma@example.com');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+  const submit = async (e) => {
+    e.preventDefault(); setError('');
+    try {
+      const res = await fetch(caregiver ? '/api/auth/login' : '/api/auth/patient-login', { method: 'POST', headers: {'Content-Type': 'application/json'}, body: caregiver ? JSON.stringify({email, password}) : '{}' });
+      const json = await res.json(); if (!res.ok) throw new Error(json.error || 'Please try again'); onLogin(json);
+    } catch (err) { setError(err.message); }
+  };
+  return <div className="min-h-screen bg-cream-50 flex items-center justify-center p-4"><div className="max-w-md w-full bg-white rounded-3xl p-8 border border-cream-200 gentle-shadow space-y-6">
+    <div className="text-center"><div className="text-5xl mb-3">🌸</div><h1 className="font-heading font-bold text-3xl text-stone-800">SmritiSaathi</h1><p className="text-stone-500 mt-2">A familiar, gentle space.</p></div>
+    <div className="grid grid-cols-2 gap-2 bg-cream-100 p-1.5 rounded-2xl"><button onClick={() => setCaregiver(false)} className={`p-3 rounded-xl font-semibold ${!caregiver ? 'bg-white text-peach-700 shadow-sm' : 'text-stone-500'}`}>I'm Devendra Ji</button><button onClick={() => setCaregiver(true)} className={`p-3 rounded-xl font-semibold ${caregiver ? 'bg-white text-sage-700 shadow-sm' : 'text-stone-500'}`}>I'm the Caregiver</button></div>
+    <form onSubmit={submit} className="space-y-4">{caregiver && <><input value={email} onChange={e => setEmail(e.target.value)} type="email" className="w-full p-3 rounded-xl border border-cream-200" placeholder="Email"/><input value={password} onChange={e => setPassword(e.target.value)} type="password" className="w-full p-3 rounded-xl border border-cream-200" placeholder="Password" required/></>}<button className="w-full py-3.5 rounded-2xl bg-peach-500 hover:bg-peach-600 text-white font-semibold">{caregiver ? 'Sign in securely' : 'Enter my space'}</button>{error && <p className="text-sm text-red-600 text-center">{error}</p>}</form>
+  </div></div>;
 }
 
 // Render into DOM

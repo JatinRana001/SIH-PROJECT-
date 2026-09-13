@@ -2,10 +2,13 @@ import json
 import os
 import time
 import threading
+from collections import deque
 from functools import wraps
 from datetime import datetime, timedelta
 from flask import Flask, request, jsonify, send_from_directory
 from flask_cors import CORS
+import bcrypt
+import jwt
 
 app = Flask(__name__, static_folder='static', static_url_path='')
 CORS(app)
@@ -15,6 +18,9 @@ DATA_LOCK = threading.RLock()
 VOICE_LANGUAGE_IDS = {'en', 'hi', 'pa', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml'}
 INTERFACE_LANGUAGE_IDS = {'en', 'hi'}
 SPEECH_SPEEDS = {'slow', 'normal', 'fast'}
+JWT_SECRET = os.environ.get('SMRITI_JWT_SECRET', 'smritisaathi-dev-secret-change-me')
+JWT_ALGORITHM = 'HS256'
+DEV_CAREGIVER_PASSWORD = 'SmritiSaathi2026!'
 
 DEFAULT_DATA = {
     "patient": {
@@ -53,6 +59,14 @@ DEFAULT_DATA = {
         "avatar": "https://images.unsplash.com/photo-1573496359142-b8d87734a5a2?w=300&h=300&fit=crop&crop=faces",
         "role": "Primary Caregiver & Neurologist"
     },
+    "users": [
+        {"id": "cg_001", "email": "ananya.sharma@example.com", "password_hash": "", "role": "caregiver"},
+        {"id": "pat_001", "role": "patient"}
+    ],
+    "home_locations": [],
+    "home_connections": [],
+    "familiar_objects": [],
+    "assistance_events": [],
     "family_members": [
         {
             "id": "fam_1",
@@ -366,7 +380,27 @@ def load_data():
         return DEFAULT_DATA
     try:
         with open(DATA_FILE, 'r', encoding='utf-8') as f:
-            return json.load(f)
+            data = json.load(f)
+            # Keep older demo data compatible without overwriting user content.
+            changed = False
+            for key in ("home_locations", "home_connections", "familiar_objects", "assistance_events"):
+                if key not in data:
+                    data[key] = []
+                    changed = True
+            if "users" not in data:
+                data["users"] = [
+                    {"id": data.get("caregiver", {}).get("id", "cg_001"), "email": data.get("caregiver", {}).get("email", "ananya.sharma@example.com"), "password_hash": bcrypt.hashpw(DEV_CAREGIVER_PASSWORD.encode(), bcrypt.gensalt()).decode(), "role": "caregiver"},
+                    {"id": data.get("patient", {}).get("id", "pat_001"), "role": "patient"}
+                ]
+                changed = True
+            elif not next((u for u in data["users"] if u.get("role") == "caregiver"), {}).get("password_hash"):
+                for user in data["users"]:
+                    if user.get("role") == "caregiver":
+                        user["password_hash"] = bcrypt.hashpw(DEV_CAREGIVER_PASSWORD.encode(), bcrypt.gensalt()).decode()
+                        changed = True
+            if changed:
+                save_data(data)
+            return data
     except Exception as e:
         print(f"Error loading data: {e}")
         return DEFAULT_DATA
@@ -382,6 +416,37 @@ def data_locked(handler):
         with DATA_LOCK:
             return handler(*args, **kwargs)
     return wrapped
+
+def create_token(user_id, role):
+    return jwt.encode({"sub": user_id, "role": role, "exp": datetime.utcnow() + timedelta(hours=12)}, JWT_SECRET, algorithm=JWT_ALGORITHM)
+
+def require_role(*roles):
+    """Require a valid bearer token with one of the named application roles."""
+    def decorator(handler):
+        @wraps(handler)
+        def wrapped(*args, **kwargs):
+            header = request.headers.get("Authorization", "")
+            if not header.startswith("Bearer "):
+                return jsonify({"error": "Authentication required"}), 401
+            try:
+                claims = jwt.decode(header[7:], JWT_SECRET, algorithms=[JWT_ALGORITHM])
+            except jwt.PyJWTError:
+                return jsonify({"error": "Invalid or expired token"}), 401
+            if claims.get("role") not in roles:
+                return jsonify({"error": "You do not have permission for this action"}), 403
+            request.auth = claims
+            return handler(*args, **kwargs)
+        return wrapped
+    return decorator
+
+class ObjectRecognitionService:
+    """Conservative demo adapter. Replace this class when a real vision model is available."""
+    def recognize(self, image, expected_object_id=None, objects=None):
+        if expected_object_id:
+            familiar = next((item for item in (objects or []) if item.get("id") == expected_object_id), None)
+            if familiar:
+                return {"name": familiar.get("name"), "confidence": 1.0, "familiar_object_id": familiar["id"]}
+        return {"name": "uncertain", "confidence": 0.0, "familiar_object_id": None}
 
 GAME_IDS = {
     "game_faces", "game_recall", "game_focus", "game_routine",
@@ -783,11 +848,27 @@ def generate_questions_for_game(game_id, data, current_level=2):
 # REST API ENDPOINTS
 # ==========================================
 
+@app.route('/api/auth/login', methods=['POST'])
+@data_locked
+def caregiver_login():
+    payload = request.get_json(silent=True) or {}
+    user = next((u for u in load_data().get("users", []) if u.get("role") == "caregiver" and u.get("email", "").lower() == str(payload.get("email", "")).lower()), None)
+    if not user or not payload.get("password") or not bcrypt.checkpw(str(payload["password"]).encode(), user["password_hash"].encode()):
+        return jsonify({"error": "Incorrect email or password"}), 401
+    return jsonify({"token": create_token(user["id"], "caregiver"), "role": "caregiver"})
+
+@app.route('/api/auth/patient-login', methods=['POST'])
+@data_locked
+def patient_login():
+    patient = load_data()["patient"]
+    return jsonify({"token": create_token(patient["id"], "patient"), "role": "patient", "patient": patient})
+
 @app.route('/api/health', methods=['GET'])
 def health():
     return jsonify({"status": "healthy", "service": "SmritiSaathi Platform API", "time": datetime.now().isoformat()})
 
 @app.route('/api/patient', methods=['GET'])
+@require_role('patient', 'caregiver')
 def get_patient():
     data = load_data()
     return jsonify({
@@ -798,6 +879,7 @@ def get_patient():
     })
 
 @app.route('/api/patient/settings', methods=['POST'])
+@require_role('patient', 'caregiver')
 def update_patient_settings():
     data = load_data()
     payload = request.json or {}
@@ -818,6 +900,7 @@ def update_patient_settings():
     return jsonify({"success": True, "settings": settings})
 
 @app.route('/api/onboarding/complete', methods=['POST'])
+@require_role('patient', 'caregiver')
 def complete_onboarding():
     data = load_data()
     payload = request.json or {}
@@ -858,6 +941,7 @@ def complete_onboarding():
     return jsonify({"success": True, "patient": data["patient"]})
 
 @app.route('/api/checkin', methods=['GET', 'POST'])
+@require_role('patient', 'caregiver')
 def daily_checkin():
     data = load_data()
     if request.method == 'GET':
@@ -897,6 +981,7 @@ def daily_checkin():
         return jsonify({"success": True, "streak_days": data["patient"]["streak_days"]})
 
 @app.route('/api/games/catalog', methods=['GET'])
+@require_role('patient', 'caregiver')
 def get_game_catalog():
     return jsonify([
         {
@@ -990,6 +1075,7 @@ def get_game_catalog():
     ])
 
 @app.route('/api/games/today-session', methods=['GET'])
+@require_role('patient', 'caregiver')
 def get_today_session():
     with DATA_LOCK:
         data = load_data()
@@ -1001,6 +1087,7 @@ def get_today_session():
                         "streak_days": data["patient"].get("streak_days", 5)})
 
 @app.route('/api/games/<game_id>', methods=['GET'])
+@require_role('patient', 'caregiver')
 def get_game(game_id):
     if game_id not in GAME_IDS:
         return jsonify({"error": "Unknown game"}), 404
@@ -1010,6 +1097,7 @@ def get_game(game_id):
                     "questions": generate_questions_for_game(game_id, data)})
 
 @app.route('/api/games/today-session/progress', methods=['POST'])
+@require_role('patient', 'caregiver')
 def update_daily_session_progress():
     payload = request.json or {}
     with DATA_LOCK:
@@ -1031,6 +1119,7 @@ def update_daily_session_progress():
         return jsonify({"success": True, "session": session})
 
 @app.route('/api/sessions/record-attempt', methods=['POST'])
+@require_role('patient', 'caregiver')
 @data_locked
 def record_attempt():
     data = load_data()
@@ -1078,6 +1167,7 @@ def record_attempt():
     })
 
 @app.route('/api/sessions/complete', methods=['POST'])
+@require_role('patient', 'caregiver')
 def complete_session():
     payload = request.json or {}
     with DATA_LOCK:
@@ -1129,11 +1219,13 @@ def complete_session():
 
 # --- Family Members Management ---
 @app.route('/api/family', methods=['GET', 'POST'])
+@require_role('patient', 'caregiver')
 def handle_family():
     data = load_data()
     if request.method == 'GET':
         return jsonify(data.get("family_members", []))
     else:
+        if request.auth['role'] != 'caregiver': return jsonify({"error": "You do not have permission for this action"}), 403
         payload = request.json or {}
         new_id = f"fam_{int(time.time())}"
         new_member = {
@@ -1153,6 +1245,7 @@ def handle_family():
         return jsonify({"success": True, "member": new_member})
 
 @app.route('/api/family/<member_id>', methods=['PUT', 'DELETE'])
+@require_role('caregiver')
 def modify_family(member_id):
     data = load_data()
     if request.method == 'DELETE':
@@ -1170,11 +1263,13 @@ def modify_family(member_id):
 
 # --- Routines Management ---
 @app.route('/api/routines', methods=['GET', 'POST'])
+@require_role('patient', 'caregiver')
 def handle_routines():
     data = load_data()
     if request.method == 'GET':
         return jsonify(data.get("routines", []))
     else:
+        if request.auth['role'] != 'caregiver': return jsonify({"error": "You do not have permission for this action"}), 403
         payload = request.json or {}
         save_data(data)
         return jsonify({"success": True})
@@ -1193,11 +1288,13 @@ def toggle_routine_step(routine_id, step_id):
 
 # --- Reminders Management ---
 @app.route('/api/reminders', methods=['GET', 'POST'])
+@require_role('patient', 'caregiver')
 def handle_reminders():
     data = load_data()
     if request.method == 'GET':
         return jsonify(data.get("reminders", []))
     else:
+        if request.auth['role'] != 'caregiver': return jsonify({"error": "You do not have permission for this action"}), 403
         payload = request.json or {}
         new_rem = {
             "id": f"rem_{int(time.time())}",
@@ -1215,6 +1312,7 @@ def handle_reminders():
         return jsonify({"success": True, "reminder": new_rem})
 
 @app.route('/api/reminders/<rem_id>/toggle', methods=['POST'])
+@require_role('patient', 'caregiver')
 def toggle_reminder(rem_id):
     data = load_data()
     for rem in data.get("reminders", []):
@@ -1225,6 +1323,7 @@ def toggle_reminder(rem_id):
     return jsonify({"error": "Reminder not found"}), 404
 
 @app.route('/api/reminders/<rem_id>', methods=['DELETE'])
+@require_role('caregiver')
 def delete_reminder(rem_id):
     data = load_data()
     data["reminders"] = [r for r in data["reminders"] if r["id"] != rem_id]
@@ -1233,6 +1332,7 @@ def delete_reminder(rem_id):
 
 # --- Cultural Preferences ---
 @app.route('/api/culture', methods=['GET', 'POST'])
+@require_role('caregiver')
 def handle_culture():
     data = load_data()
     if request.method == 'GET':
@@ -1245,6 +1345,7 @@ def handle_culture():
 
 # --- Caregiver Analytics & Overview ---
 @app.route('/api/caregiver/overview', methods=['GET'])
+@require_role('caregiver')
 def caregiver_overview():
     data = load_data()
     return jsonify({
@@ -1258,8 +1359,33 @@ def caregiver_overview():
     })
 
 @app.route('/api/caregiver/analytics', methods=['GET'])
+@require_role('caregiver')
 def caregiver_analytics():
     data = load_data()
+    today = local_day()
+    event_types = [
+        "WHERE_AM_I_USED", "ROUTE_REQUESTED", "ROUTE_COMPLETED",
+        "OBJECT_RECOGNITION_USED", "OBJECT_RECOGNITION_SUCCESS",
+        "OBJECT_RECOGNITION_UNCERTAIN", "CAREGIVER_ASSISTANCE_REQUESTED"
+    ]
+    today_events = [event for event in data.get("assistance_events", []) if str(event.get("timestamp", ""))[:10] == today]
+    counts = {event_type: sum(event.get("event_type") == event_type for event in today_events) for event_type in event_types}
+    location_names = {item["id"]: item.get("familiar_name") or item.get("name") for item in data.get("home_locations", [])}
+    object_names = {item["id"]: item.get("familiar_name") or item.get("name") for item in data.get("familiar_objects", [])}
+    def requested(events, field, names):
+        totals = {}
+        for event in events:
+            item_id = event.get(field)
+            if item_id and item_id in names:
+                totals[item_id] = totals.get(item_id, 0) + 1
+        return [{"id": item_id, "name": names[item_id], "count": count} for item_id, count in sorted(totals.items(), key=lambda item: (-item[1], item[0]))[:5]]
+    house_assistance = {
+        "today": counts,
+        "most_requested": {
+            "locations": requested(today_events, "location_id", location_names),
+            "objects": requested(today_events, "object_id", object_names)
+        }
+    }
     dates = [(datetime.now() - timedelta(days=13-i)).strftime("%b %d") for i in range(14)]
     recognition_scores = [86, 88, 87, 89, 90, 88, 91, 93, 90, 92, 94, 91, 93, 95]
     memory_scores = [62, 65, 64, 66, 68, 65, 67, 70, 68, 69, 71, 68, 70, 72]
@@ -1287,8 +1413,120 @@ def caregiver_analytics():
             "Words & Language": 79,
             "Logical Sequencing": 71,
             "Working Memory": 68
-        }
+        },
+        "house_assistance": house_assistance
     })
+
+# --- House & Object Assistance ---
+def assistance_item(data, collection, item_id):
+    return next((item for item in data.get(collection, []) if item.get("id") == item_id), None)
+
+@app.route('/api/home/locations', methods=['GET', 'POST'])
+@require_role('patient', 'caregiver')
+@data_locked
+def home_locations():
+    data = load_data()
+    if request.method == 'GET': return jsonify(data.get('home_locations', []))
+    if request.auth['role'] != 'caregiver': return jsonify({'error': 'You do not have permission for this action'}), 403
+    payload = request.get_json(silent=True) or {}
+    now = datetime.now().isoformat()
+    location = {"id": f"loc_{int(time.time() * 1000)}", "patient_id": data['patient']['id'], "name": payload.get('name', 'Room'), "familiar_name": payload.get('familiar_name', payload.get('name', 'Room')), "type": payload.get('type', 'other'), "photo": payload.get('photo'), "description": payload.get('description', ''), "voice_description": payload.get('voice_description', ''), "is_active": payload.get('is_active', True), "created_at": now, "updated_at": now}
+    data['home_locations'].append(location); save_data(data)
+    return jsonify({'success': True, 'location': location})
+
+@app.route('/api/home/locations/<location_id>', methods=['PUT', 'DELETE'])
+@require_role('caregiver')
+@data_locked
+def home_location_detail(location_id):
+    data = load_data(); location = assistance_item(data, 'home_locations', location_id)
+    if not location: return jsonify({'error': 'Location not found'}), 404
+    if request.method == 'DELETE':
+        data['home_locations'] = [x for x in data['home_locations'] if x['id'] != location_id]
+        data['home_connections'] = [x for x in data['home_connections'] if location_id not in (x['from_location_id'], x['to_location_id'])]
+        save_data(data); return jsonify({'success': True, 'deleted_id': location_id})
+    location.update(request.get_json(silent=True) or {}); location['updated_at'] = datetime.now().isoformat(); save_data(data)
+    return jsonify({'success': True, 'location': location})
+
+@app.route('/api/home/connections', methods=['GET', 'POST'])
+@require_role('patient', 'caregiver')
+@data_locked
+def home_connections():
+    data = load_data()
+    if request.method == 'GET': return jsonify(data.get('home_connections', []))
+    if request.auth['role'] != 'caregiver': return jsonify({'error': 'You do not have permission for this action'}), 403
+    p = request.get_json(silent=True) or {}
+    if not assistance_item(data, 'home_locations', p.get('from_location_id')) or not assistance_item(data, 'home_locations', p.get('to_location_id')): return jsonify({'error': 'Both locations must exist'}), 400
+    connection = {"id": f"conn_{int(time.time() * 1000)}", "patient_id": data['patient']['id'], "from_location_id": p['from_location_id'], "to_location_id": p['to_location_id'], "instruction": p.get('instruction', ''), "voice_instruction": p.get('voice_instruction', ''), "distance_estimate": p.get('distance_estimate'), "created_at": datetime.now().isoformat()}
+    data['home_connections'].append(connection); save_data(data); return jsonify({'success': True, 'connection': connection})
+
+@app.route('/api/home/connections/<connection_id>', methods=['PUT', 'DELETE'])
+@require_role('caregiver')
+@data_locked
+def home_connection_detail(connection_id):
+    data = load_data(); connection = assistance_item(data, 'home_connections', connection_id)
+    if not connection: return jsonify({'error': 'Connection not found'}), 404
+    if request.method == 'DELETE': data['home_connections'] = [x for x in data['home_connections'] if x['id'] != connection_id]; save_data(data); return jsonify({'success': True, 'deleted_id': connection_id})
+    connection.update(request.get_json(silent=True) or {}); save_data(data); return jsonify({'success': True, 'connection': connection})
+
+@app.route('/api/home/route', methods=['GET'])
+@require_role('patient', 'caregiver')
+@data_locked
+def home_route():
+    data = load_data(); start, target = request.args.get('from'), request.args.get('to')
+    locations = {x['id']: x for x in data.get('home_locations', [])}
+    if start not in locations or target not in locations: return jsonify({'found': False, 'message': "I don't have a route to this place yet."})
+    queue, previous = deque([start]), {start: None}
+    edges = data.get('home_connections', [])
+    while queue:
+        current = queue.popleft()
+        if current == target: break
+        for edge in edges:
+            neighbor = edge['to_location_id'] if edge['from_location_id'] == current else (edge['from_location_id'] if edge['to_location_id'] == current else None)
+            if neighbor and neighbor not in previous: previous[neighbor] = (current, edge); queue.append(neighbor)
+    if target not in previous: return jsonify({'found': False, 'message': "I don't have a route to this place yet."})
+    path = []
+    while target is not None:
+        parent = previous[target]; path.append({**locations[target], 'instruction': parent[1].get('instruction', '') if parent else ''}); target = parent[0] if parent else None
+    return jsonify({'found': True, 'route': list(reversed(path))})
+
+@app.route('/api/objects', methods=['GET', 'POST'])
+@require_role('patient', 'caregiver')
+@data_locked
+def familiar_objects():
+    data = load_data()
+    if request.method == 'GET': return jsonify(data.get('familiar_objects', []))
+    if request.auth['role'] != 'caregiver': return jsonify({'error': 'You do not have permission for this action'}), 403
+    p = request.get_json(silent=True) or {}; item = {"id": f"obj_{int(time.time() * 1000)}", "patient_id": data['patient']['id'], "name": p.get('name', 'Familiar object'), "familiar_name": p.get('familiar_name', p.get('name', 'Familiar object')), "image": p.get('image'), "everyday_use": p.get('everyday_use', ''), "room_id": p.get('room_id'), "person_id": p.get('person_id'), "routine_id": p.get('routine_id'), "voice_explanation": p.get('voice_explanation', ''), "created_at": datetime.now().isoformat()}
+    data['familiar_objects'].append(item); save_data(data); return jsonify({'success': True, 'object': item})
+
+@app.route('/api/objects/<object_id>', methods=['PUT', 'DELETE'])
+@require_role('caregiver')
+@data_locked
+def familiar_object_detail(object_id):
+    data = load_data(); item = assistance_item(data, 'familiar_objects', object_id)
+    if not item: return jsonify({'error': 'Object not found'}), 404
+    if request.method == 'DELETE': data['familiar_objects'] = [x for x in data['familiar_objects'] if x['id'] != object_id]; save_data(data); return jsonify({'success': True, 'deleted_id': object_id})
+    item.update(request.get_json(silent=True) or {}); save_data(data); return jsonify({'success': True, 'object': item})
+
+@app.route('/api/object-recognition', methods=['POST'])
+@require_role('patient', 'caregiver')
+@data_locked
+def object_recognition():
+    data = load_data(); payload = request.get_json(silent=True) or request.form.to_dict()
+    result = ObjectRecognitionService().recognize(payload.get('image') or request.files.get('image'), payload.get('expected_object_id'), data.get('familiar_objects', []))
+    return jsonify(result)
+
+@app.route('/api/assistance/events', methods=['GET', 'POST'])
+@require_role('patient', 'caregiver')
+@data_locked
+def assistance_events():
+    data = load_data()
+    if request.method == 'GET':
+        if request.auth['role'] != 'caregiver': return jsonify({'error': 'You do not have permission for this action'}), 403
+        return jsonify(data.get('assistance_events', []))
+    p = request.get_json(silent=True) or {}; event = {"id": p.get('id', f"evt_{int(time.time() * 1000)}"), "patient_id": data['patient']['id'], "event_type": p.get('event_type', 'ASSISTANCE_USED'), "timestamp": p.get('timestamp', datetime.now().isoformat()), "location_id": p.get('location_id'), "object_id": p.get('object_id'), "success": p.get('success', True), "recognition_result": p.get('recognition_result'), "offline": p.get('offline', False), "sync_status": "synced"}
+    if not assistance_item(data, 'assistance_events', event['id']): data['assistance_events'].append(event); save_data(data)
+    return jsonify({'success': True, 'event': event})
 
 @app.route('/')
 def index():
@@ -1298,4 +1536,5 @@ if __name__ == '__main__':
     os.makedirs(os.path.join(os.path.dirname(__file__), 'static'), exist_ok=True)
     load_data()
     print("SmritiSaathi Server starting on http://localhost:5000")
+    print(f"Dev caregiver login: ananya.sharma@example.com / {DEV_CAREGIVER_PASSWORD}")
     app.run(host='0.0.0.0', port=5000, debug=False)

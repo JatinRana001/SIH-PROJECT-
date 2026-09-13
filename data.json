@@ -8,16 +8,16 @@
     "region": "Delhi / NCR",
     "language": "Hindi & English",
     "bio": "Retired railway engineer who loves morning tea on the balcony, Ghazals, and playing with his grandson.",
-    "streak_days": 11,
-    "total_sessions_completed": 22,
-    "current_session_done_today": true,
-    "last_session_date": "2026-09-07",
+    "streak_days": 13,
+    "total_sessions_completed": 23,
+    "current_session_done_today": false,
+    "last_session_date": "2026-09-08",
     "onboarding_completed": true,
     "settings": {
       "font_size": "large",
       "voice_guidance": true,
       "interface_language": "en",
-      "voice_language": "en",
+      "voice_language": "hi",
       "voice_enabled": true,
       "auto_read_aloud": true,
       "speech_speed": "normal",
@@ -156,7 +156,7 @@
           "title": "Relaxing afternoon rest / Ghazal music",
           "time": "2:00 PM",
           "icon": "Music",
-          "completed": false
+          "completed": true
         },
         {
           "id": "a4",
@@ -260,17 +260,6 @@
       "badge": "Medication",
       "completed": false,
       "due_period": "Night"
-    },
-    {
-      "id": "rem_1788800262",
-      "type": "medication",
-      "title": "night multivitammins",
-      "description": "take it with water",
-      "time": "10;00 pm",
-      "icon": "Bell",
-      "badge": "Medication",
-      "completed": false,
-      "due_period": "Daily"
     }
   ],
   "cultural_preferences": {
@@ -315,21 +304,21 @@
       "level": 4,
       "accuracy_pct": 97,
       "trend": "up",
-      "hints_avg": 0.2,
+      "hints_avg": 0.4,
       "description": "Exceptional familiarity identifying grandson Rohan, daughter Priya, and close relatives."
     },
     "memory": {
       "name": "Remember & Recall",
-      "level": 2,
-      "accuracy_pct": 88,
-      "trend": "stable",
-      "hints_avg": 0.4,
+      "level": 4,
+      "accuracy_pct": 94,
+      "trend": "up",
+      "hints_avg": 0.2,
       "description": "Benefits from visual association and gentle hints when recalling 4+ objects."
     },
     "attention": {
       "name": "Focus & Attention",
       "level": 3,
-      "accuracy_pct": 87,
+      "accuracy_pct": 89,
       "trend": "up",
       "hints_avg": 0.2,
       "description": "High focus during colorful target spotting with prompt reaction times."
@@ -337,25 +326,25 @@
     "sequencing": {
       "name": "Daily Routine & Order",
       "level": 4,
-      "accuracy_pct": 92,
+      "accuracy_pct": 93,
       "trend": "up",
-      "hints_avg": 0.4,
+      "hints_avg": 0.3,
       "description": "Consistent ordering of daily morning steps, brushing, bathing, and meals."
     },
     "semantic": {
       "name": "Match & Associate",
       "level": 3,
-      "accuracy_pct": 82,
+      "accuracy_pct": 87,
       "trend": "stable",
-      "hints_avg": 0.7,
+      "hints_avg": 0.5,
       "description": "Strong associations between family members, common household tools, and their uses."
     },
     "language": {
       "name": "Words & Language",
-      "level": 3,
-      "accuracy_pct": 89,
-      "trend": "stable",
-      "hints_avg": 0.3,
+      "level": 4,
+      "accuracy_pct": 92,
+      "trend": "up",
+      "hints_avg": 0.6,
       "description": "Quickly completes common words, opposites, and everyday object naming."
     },
     "culture": {
@@ -369,13 +358,21 @@
     "reasoning": {
       "name": "Sequence & Reasoning",
       "level": 2,
-      "accuracy_pct": 82,
+      "accuracy_pct": 87,
       "trend": "stable",
-      "hints_avg": 0.6,
+      "hints_avg": 0.4,
       "description": "Comfortable with step patterns (2, 4, 6) and daily logic with supportive reassurance."
     }
   },
   "alerts": [
+    {
+      "id": "alt_1788848533",
+      "severity": "success",
+      "title": "Daily Wellness Session Completed 🎉",
+      "message": "Devendra completed 4 activities in 8 minutes with great cheerfulness.",
+      "timestamp": "Just now",
+      "action_taken": "Session recorded; next recommended activities scheduled for tomorrow."
+    },
     {
       "id": "alt_1788785635",
       "severity": "success",
@@ -434,6 +431,21 @@
     }
   ],
   "history_sessions": [
+    {
+      "session_id": "daily_pat_001_2026-09-08",
+      "date": "2026-09-08",
+      "completed_activities": 4,
+      "duration_minutes": 8,
+      "encouragement": "Wonderful focus and warmth today! You completed all activities with a smile.",
+      "stars": 5,
+      "skills_practiced": [
+        "Recognition",
+        "Routine",
+        "Memory",
+        "Culture"
+      ],
+      "accuracy": 90
+    },
     {
       "session_id": "ses_1788785635",
       "date": "2026-09-07",
@@ -963,12 +975,180 @@
       "hints_used": 0,
       "response_time_ms": 2793,
       "timestamp": "2026-09-07T22:20:08.256538"
+    },
+    {
+      "question_id": "gr_q1",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 5491,
+      "timestamp": "2026-09-07T23:01:12.698927"
+    },
+    {
+      "question_id": "gr_q2",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1145,
+      "timestamp": "2026-09-07T23:01:14.726127"
+    },
+    {
+      "question_id": "gw_q1",
+      "game_type": "language",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1670,
+      "timestamp": "2026-09-07T23:01:44.996674"
+    },
+    {
+      "question_id": "gw_q2",
+      "game_type": "language",
+      "is_correct": true,
+      "hints_used": 3,
+      "response_time_ms": 15527,
+      "timestamp": "2026-09-07T23:02:02.336687"
+    },
+    {
+      "question_id": "gma_q1",
+      "game_type": "semantic",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 11957,
+      "timestamp": "2026-09-07T23:02:22.192720"
+    },
+    {
+      "question_id": "gma_q2",
+      "game_type": "semantic",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1703,
+      "timestamp": "2026-09-07T23:02:25.146739"
+    },
+    {
+      "question_id": "gfc_q1",
+      "game_type": "attention",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 3482,
+      "timestamp": "2026-09-07T23:02:35.282703"
+    },
+    {
+      "question_id": "gr_q1",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 10798,
+      "timestamp": "2026-09-07T23:11:52.977604"
+    },
+    {
+      "question_id": "gr_q2",
+      "game_type": "memory",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 8092,
+      "timestamp": "2026-09-07T23:12:03.100723"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 3835,
+      "timestamp": "2026-09-08T10:10:02.034601"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 6123,
+      "timestamp": "2026-09-08T10:10:11.644142"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 6737,
+      "timestamp": "2026-09-08T11:51:08.691260"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 2,
+      "response_time_ms": 16883,
+      "timestamp": "2026-09-08T11:51:30.003201"
+    },
+    {
+      "question_id": "grp_q1",
+      "game_type": "sequencing",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 16334,
+      "timestamp": "2026-09-08T11:51:47.331631"
+    },
+    {
+      "question_id": "grs_q1",
+      "game_type": "reasoning",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 5770,
+      "timestamp": "2026-09-08T11:51:55.001176"
+    },
+    {
+      "question_id": "grs_q1",
+      "game_type": "reasoning",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1410,
+      "timestamp": "2026-09-08T11:52:06.426034"
+    },
+    {
+      "question_id": "gc_q1",
+      "game_type": "culture",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1772,
+      "timestamp": "2026-09-08T11:52:09.243698"
+    },
+    {
+      "question_id": "gc_q2",
+      "game_type": "culture",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1439,
+      "timestamp": "2026-09-08T11:52:11.874942"
+    },
+    {
+      "question_id": "gf_q1",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 1546,
+      "timestamp": "2026-09-08T11:53:24.638922"
+    },
+    {
+      "question_id": "gf_q2",
+      "game_type": "recognition",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 6926,
+      "timestamp": "2026-09-08T11:53:42.356983"
+    },
+    {
+      "question_id": "gw_q1",
+      "game_type": "language",
+      "is_correct": true,
+      "hints_used": 0,
+      "response_time_ms": 6737,
+      "timestamp": "2026-09-08T11:54:24.419044"
     }
   ],
   "daily_session": {
-    "session_id": "daily_pat_001_2026-09-07",
+    "session_id": "daily_pat_001_2026-09-13",
     "patient_id": "pat_001",
-    "date": "2026-09-07",
+    "date": "2026-09-13",
     "activities": [
       {
         "order": 1,
@@ -1023,7 +1203,7 @@
             "audio_text": "What is your special relationship with Ankit?"
           }
         ],
-        "completed": true
+        "completed": false
       },
       {
         "order": 2,
@@ -1072,82 +1252,66 @@
             "audio_text": "What do you normally do first in the morning? Arrange the steps from first to last."
           }
         ],
-        "completed": true
+        "completed": false
       },
       {
         "order": 3,
-        "game_id": "game_recall",
-        "title": "Remember & Recall",
-        "category": "Memory",
-        "icon": "Brain",
-        "color": "lavender",
-        "bg": "bg-purple-50 border-purple-200 text-purple-800",
-        "description": "View familiar everyday objects, watch them rest, and recall what you noticed.",
+        "game_id": "game_match",
+        "title": "Match & Associate",
+        "category": "Association",
+        "icon": "Shapes",
+        "color": "amber",
+        "bg": "bg-orange-50 border-orange-200 text-orange-800",
+        "description": "Match common household objects with their purposes and rooms.",
         "questions": [
           {
-            "id": "gr_q1",
-            "game_type": "memory",
-            "title": "Remember these 4 everyday items",
-            "subtitle": "Look carefully at these objects. In a moment, they will hide!",
-            "preview_duration_sec": 5,
-            "display_items": [
-              {
-                "name": "Apple",
-                "emoji": "🍎"
-              },
-              {
-                "name": "Key",
-                "emoji": "🔑"
-              },
-              {
-                "name": "Glasses",
-                "emoji": "🕶️"
-              },
-              {
-                "name": "Chai Cup",
-                "emoji": "☕"
-              }
-            ],
-            "question": "Which of these objects was on the tray?",
+            "id": "gma_q1",
+            "game_type": "semantic",
+            "title": "What do we use this everyday object for?",
+            "subtitle": "Match the object to its familiar purpose.",
+            "item_emoji": "🪥",
+            "item_name": "Toothbrush",
+            "question": "A toothbrush is used for...",
             "options": [
-              "Apple 🍎",
-              "Train Ticket 🎫",
-              "Umbrella ☂️",
-              "Sunflower 🌻"
+              "Cleaning teeth in the morning",
+              "Combing hair",
+              "Watering potted plants",
+              "Writing letters"
             ],
-            "correct_answer": "Apple 🍎",
+            "correct_answer": "Cleaning teeth in the morning",
             "hints": [
-              "💡 Think back to the fresh red fruit displayed on the left.",
-              "💡 It is sweet, crisp, and keeps the doctor away!",
-              "💡 It is an Apple 🍎."
+              "💡 It works with toothpaste and cool water.",
+              "💡 It keeps your smile healthy and bright.",
+              "💡 It is used for cleaning your teeth!"
             ],
-            "explanation": "Great memory! You spotted the red apple 🍎 right away.",
-            "audio_text": "Which of these objects did you just see on the tray?"
+            "explanation": "Spot on! A toothbrush keeps your morning smile fresh and healthy. 🪥",
+            "audio_text": "What do we use a toothbrush for?"
           },
           {
-            "id": "gr_q2",
-            "game_type": "memory",
-            "title": "Recall the second item",
-            "subtitle": "From the same collection of items you just viewed:",
-            "preview_duration_sec": 0,
-            "question": "Which everyday tool was on the tray to unlock doors?",
+            "id": "gma_q2",
+            "game_type": "semantic",
+            "title": "Match the place to the activity",
+            "subtitle": "Where do we normally enjoy this activity?",
+            "item_emoji": "🍳",
+            "item_name": "Cooking fresh food",
+            "question": "In the house, where is warm food prepared?",
             "options": [
-              "Key 🔑",
-              "Hammer 🔨",
-              "Watch ⌚",
-              "Pen ✒️"
+              "Kitchen 🍳",
+              "Bedroom 🛏️",
+              "Balcony 🪴",
+              "Bookshelf 📚"
             ],
-            "correct_answer": "Key 🔑",
+            "correct_answer": "Kitchen 🍳",
             "hints": [
-              "💡 It is made of metal and used with a door lock.",
-              "💡 You carry it in your pocket when going out.",
-              "💡 It is the brass door Key 🔑."
+              "💡 Where the stove, pans, and spices live.",
+              "💡 Where delicious aromas of tadka and tea come from.",
+              "💡 The kitchen!"
             ],
-            "explanation": "Superb! The key 🔑 was indeed on the tray.",
-            "audio_text": "Which everyday tool was on the tray to unlock doors?"
+            "explanation": "Wonderful! The kitchen is the warm heart of the home.",
+            "audio_text": "In the house, where is warm food prepared?"
           }
         ],
-        "completed": true
+        "completed": false
       },
       {
         "order": 4,
@@ -1206,11 +1370,27 @@
             "audio_text": "What warm spiced beverage is brewed with ginger and cardamom for morning tea?"
           }
         ],
-        "completed": true
+        "completed": false
       }
     ],
-    "current_activity_index": 3,
-    "completed": true,
+    "current_activity_index": 0,
+    "completed": false,
     "completed_at": null
-  }
+  },
+  "home_locations": [],
+  "home_connections": [],
+  "familiar_objects": [],
+  "assistance_events": [],
+  "users": [
+    {
+      "id": "cg_001",
+      "email": "ananya.sharma@example.com",
+      "password_hash": "$2b$12$1z2uDHDnF1fPukvfv8NaJezrXsoDHFvewS1uZw4YpG3GQfnKX8iJ.",
+      "role": "caregiver"
+    },
+    {
+      "id": "pat_001",
+      "role": "patient"
+    }
+  ]
 }
